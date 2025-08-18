@@ -25,7 +25,7 @@ public class VideoExchangeServiceImpl implements VideoExchangeService {
         try {
             Files.createDirectories(Paths.get(tempDir));
 
-            FFmpegUtil.convertToHls(videoPath, playlistPath);
+//            FFmpegUtil.convertToHls(videoPath, playlistPath);
 
             File playlistFile = new File(playlistPath);
             int retryCount = 0;

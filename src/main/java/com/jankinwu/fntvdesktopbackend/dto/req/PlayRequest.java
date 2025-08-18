@@ -8,7 +8,7 @@ import lombok.Data;
  * @date 2025-08-18 11:12
  **/
 @Data
-public class VideoToHlsReq {
+public class PlayRequest {
 
     private String videoPath;
 }
