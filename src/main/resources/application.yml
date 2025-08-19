@@ -23,4 +23,5 @@ mybatis-plus:
 #    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
     map-underscore-to-camel-case: true
 app:
-  segment-duration: 4
+  segment-duration: 4000
+  ffmpeg-path: D:\WorkTools\ffmpeg-7.1.1-full_build\bin

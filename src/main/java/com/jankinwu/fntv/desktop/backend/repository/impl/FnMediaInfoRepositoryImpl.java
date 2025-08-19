@@ -16,7 +16,7 @@ public class FnMediaInfoRepositoryImpl extends ServiceImpl<FnMediaInfoMapper, Fn
     implements FnMediaInfoRepository {
 
     @Override
-    public FnMediaInfoDO getByMediaCode(String mediaCode) {
+    public FnMediaInfoDO getByMediaGuid(String mediaCode) {
         return lambdaQuery()
                 .eq(FnMediaInfoDO::getMediaGuid, mediaCode)
                 .one();

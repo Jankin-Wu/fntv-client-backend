@@ -1,6 +1,7 @@
 package com.jankinwu.fntv.desktop.backend.controller;
 
 import com.jankinwu.fntv.desktop.backend.dto.req.PlayRequest;
+import com.jankinwu.fntv.desktop.backend.dto.resp.PlayResponse;
 import com.jankinwu.fntv.desktop.backend.enums.HlsFileEnum;
 import com.jankinwu.fntv.desktop.backend.service.MediaService;
 import jakarta.servlet.http.HttpServletResponse;
@@ -19,15 +20,15 @@ public class MediaController {
 
     private final MediaService mediaService;
 
-    @GetMapping("/media/{mediaCode}/{fileName}")
-    public void getHlsFile(@PathVariable("mediaCode") String mediaCode, @PathVariable("fileName") String fileName, HttpServletResponse response) {
+    @GetMapping("/media/{mediaGuid}/{fileName}")
+    public void getHlsFile(@PathVariable("mediaGuid") String mediaGuid, @PathVariable("fileName") String fileName, HttpServletResponse response) {
         try {
-            if (!fileName.endsWith(HlsFileEnum.M3U8.getSuffix())) {
+            if (fileName.endsWith(HlsFileEnum.M3U8.getSuffix())) {
                 response.setContentType("application/vnd.apple.mpegurl");
-                mediaService.getM3u8File(mediaCode, response.getOutputStream());
-            } else  if (fileName.endsWith(HlsFileEnum.TS.getSuffix())) {
+                mediaService.getM3u8File(mediaGuid, response.getOutputStream());
+            } else if (fileName.endsWith(HlsFileEnum.TS.getSuffix())) {
                 response.setContentType("video/mp2t");
-                mediaService.getTsFile(mediaCode, fileName, response.getOutputStream());
+                mediaService.getTsFile(mediaGuid, fileName, response.getOutputStream());
             } else {
                 return;
             }
@@ -39,8 +40,9 @@ public class MediaController {
     }
 
     @PostMapping("/api/v1/play/play")
-    public void play(@RequestBody PlayRequest request) {
-
+    public PlayResponse play(@RequestBody PlayRequest request) {
+        mediaService.saveOrUpdateMediaInfo(request);
+        return mediaService.getPlayResponse(request.getMediaGuid());
     }
 
 }

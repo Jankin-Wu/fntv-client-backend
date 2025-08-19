@@ -4,16 +4,19 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import java.time.LocalDateTime;
+import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 /**
  * 飞牛媒体信息表
  * @TableName FN_MEDIA_INFO
  */
+@EqualsAndHashCode(callSuper = true)
+@Builder
 @TableName(value ="FN_MEDIA_INFO")
 @Data
-public class FnMediaInfoDO {
+public class FnMediaInfoDO extends BaseDomain{
     /**
      * 主键
      */
@@ -67,28 +70,4 @@ public class FnMediaInfoDO {
      */
     @TableField(value = "M3U8_CONTENT")
     private String m3u8Content;
-
-    /**
-     * 创建人
-     */
-    @TableField(value = "CREATE_BY")
-    private String createBy;
-
-    /**
-     * 修改人
-     */
-    @TableField(value = "UPDATE_BY")
-    private String updateBy;
-
-    /**
-     * 创建时间
-     */
-    @TableField(value = "CREATE_TIME")
-    private LocalDateTime createTime;
-
-    /**
-     * 修改时间
-     */
-    @TableField(value = "UPDATE_TIME")
-    private LocalDateTime updateTime;
 }

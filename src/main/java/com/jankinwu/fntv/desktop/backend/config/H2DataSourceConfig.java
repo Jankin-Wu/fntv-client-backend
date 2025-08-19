@@ -51,11 +51,7 @@ public class H2DataSourceConfig {
             Resource resource = applicationContextRegister.getResource(SCHEMA);
             // 手动执行SQL语句
             ScriptUtils.executeSqlScript(dataSource.getConnection(), resource);
+            log.info("--------------h2数据库初始化完成----------------------");
         }
-        // 加载资源文件
-        Resource resource = applicationContextRegister.getResource(SCHEMA);
-        // 手动执行SQL语句
-        ScriptUtils.executeSqlScript(dataSource.getConnection(), resource);
-        log.info("--------------h2数据库初始化完成----------------------");
     }
 }

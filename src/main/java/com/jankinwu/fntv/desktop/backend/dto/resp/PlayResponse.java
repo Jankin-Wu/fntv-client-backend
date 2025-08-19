@@ -1,5 +1,6 @@
 package com.jankinwu.fntv.desktop.backend.dto.resp;
 
+import lombok.Builder;
 import lombok.Data;
 
 /**
@@ -8,9 +9,8 @@ import lombok.Data;
  * @date 2025-08-19 10:25
  **/
 @Data
+@Builder
 public class PlayResponse {
-
-    private String videoCode;
 
     private String playLink;
 }

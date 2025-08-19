@@ -1,5 +1,7 @@
 package com.jankinwu.fntv.desktop.backend.service;
 
+import com.jankinwu.fntv.desktop.backend.dto.req.PlayRequest;
+import com.jankinwu.fntv.desktop.backend.dto.resp.PlayResponse;
 import jakarta.servlet.ServletOutputStream;
 
 /**
@@ -9,7 +11,11 @@ import jakarta.servlet.ServletOutputStream;
  **/
 public interface MediaService {
 
-    void getM3u8File(String mediaCode, ServletOutputStream outputStream);
+    void getM3u8File(String mediaGuid, ServletOutputStream outputStream);
 
-    void getTsFile(String mediaCode, String fileName, ServletOutputStream outputStream);
+    void getTsFile(String mediaGuid, String fileName, ServletOutputStream outputStream);
+
+    void saveOrUpdateMediaInfo(PlayRequest request);
+
+    PlayResponse getPlayResponse(String mediaGuid);
 }

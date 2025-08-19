@@ -10,5 +10,5 @@ import com.baomidou.mybatisplus.extension.service.IService;
 */
 public interface FnMediaInfoRepository extends IService<FnMediaInfoDO> {
 
-    FnMediaInfoDO getByMediaCode(String mediaCode);
+    FnMediaInfoDO getByMediaGuid(String mediaCode);
 }

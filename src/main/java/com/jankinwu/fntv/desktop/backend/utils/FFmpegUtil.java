@@ -3,7 +3,6 @@ package com.jankinwu.fntv.desktop.backend.utils;
 import com.github.kokorin.jaffree.StreamType;
 import com.github.kokorin.jaffree.ffmpeg.FFmpeg;
 import com.github.kokorin.jaffree.ffmpeg.PipeOutput;
-import com.github.kokorin.jaffree.ffmpeg.UrlInput;
 import com.github.kokorin.jaffree.ffprobe.FFprobe;
 import com.github.kokorin.jaffree.ffprobe.FFprobeResult;
 import com.github.kokorin.jaffree.ffprobe.Stream;
@@ -11,11 +10,17 @@ import com.jankinwu.fntv.desktop.backend.enums.HlsFileEnum;
 import jakarta.servlet.ServletOutputStream;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -32,47 +37,41 @@ public class FFmpegUtil {
      * @param ffmpegPath     ffmpeg 可执行文件所在目录（若已在系统 PATH 中可直接传入 null）
      * @param inputVideoPath 原视频文件路径
      * @param outputStream   切片后的 TS 文件的输出流
-     * @param startTime      切片的起始时间（单位：秒）
-     * @param duration       切片时长（单位：秒）
+     * @param tsFileName     TS文件名称
+     * @param m3u8Content    m3u8文件内容，用于获取切片信息
      * @throws RuntimeException 当执行切片命令失败时抛出
      */
-    public static void sliceMediaToTs(String ffmpegPath, String inputVideoPath, OutputStream outputStream, Long startTime,
-                                      Long duration, boolean enableHardwareEncoding, boolean useGPUAcceleration) {
-        // 若 ffmpegPath 不为空，使用指定路径；否则使用环境变量中可执行文件
+    public static void sliceMediaToTs(String ffmpegPath, String inputVideoPath, OutputStream outputStream,
+                                      boolean enableHardwareEncoding, boolean useGPUAcceleration, String m3u8Content, String tsFileName) {
         Path ffmpegBin = ffmpegPath == null ? null : Paths.get(ffmpegPath);
 
-//        // 1) 获取源视频的视频编码格式（如 h264 / hevc）
-//        String srcCodec = probeVideoCodec(ffmpegBin, inputVideoPath); // 可能返回 null
-//        // 2) 若启用硬件编码，且源编码可匹配的硬件编码器存在，则返回该硬件编码器名，否则返回 null
-//        String matchedHwEncoder = null;
-//        if (enableHardwareEncoding && srcCodec != null) {
-//            matchedHwEncoder = detectMatchedHardwareEncoder(ffmpegBin, srcCodec);
-//        }
-
         try {
+            // 从m3u8Content中解析出切片时长和序号
+            int fileNumber = parseFileNumberFromTsName(tsFileName);
+            long startTime = parseStartTimeFromM3u8(m3u8Content, fileNumber);
+            int duration = parseDurationFromM3u8(m3u8Content, fileNumber);
+
+            // 查找最接近的关键帧时间
+            double keyFrameTime = findNearestKeyFrame(ffmpegPath, inputVideoPath, startTime);
+            long adjustedStartTime = (long) Math.floor(keyFrameTime);
+
+            // 计算调整后的持续时间，确保总时长不变
+            long adjustedDuration = duration + (startTime - adjustedStartTime);
+
+            // 使用Jaffree进行视频切片，从关键帧开始切割
             FFmpeg ffmpeg = FFmpeg.atPath(ffmpegBin)
-                    .addInput(UrlInput.fromPath(Paths.get(inputVideoPath))
-                            .setPosition(startTime)
-                            .setDuration(duration));
+                    .addInput(com.github.kokorin.jaffree.ffmpeg.UrlInput.fromUrl(inputVideoPath)
+                            .setPosition(adjustedStartTime * 1000) // 转换为毫秒
+                            .setDuration(adjustedDuration * 1000L)) // 确保在关键帧处开始解码
+                    .addOutput(PipeOutput.pumpTo(outputStream)
+                            .setFormat("mpegts")
+                            .copyAllCodecs() // 复用所有编解码器以保持原始质量
+//                            .addArguments("-avoid_negative_ts", "make_zero")
+//                            .addArguments("-start_at_zero", "")
+                    );
 
-            PipeOutput output = PipeOutput.pumpTo(outputStream)
-                    .setFormat("mpegts");
-            // 这版只做流拷贝，不做转码
-            output.setCodec(StreamType.VIDEO, "copy");
-            output.setCodec(StreamType.AUDIO, "copy");
-
-//            if (enableHardwareEncoding && matchedHwEncoder != null) {
-//                // 可用的硬件编码器与源编码一致 -> 使用硬件编码器
-//                addHwAccelArgs(ffmpeg, matchedHwEncoder, useGPUAcceleration);
-//                output.setCodec(StreamType.VIDEO, matchedHwEncoder);
-//                output.setCodec(StreamType.AUDIO, "copy");
-//            } else {
-//                // 未启用硬件编码或不匹配 -> 走 copy（软解/直拷）
-//                output.setCodec(StreamType.VIDEO, "copy");
-//                output.setCodec(StreamType.AUDIO, "copy");
-//            }
-
-            ffmpeg.addOutput(output).execute();
+            // 执行FFmpeg命令并将输出写入流
+            ffmpeg.execute();
 
         } catch (Exception e) {
             log.error("视频切片失败: {}", e.getMessage(), e);
@@ -81,10 +80,182 @@ public class FFmpegUtil {
     }
 
     /**
+     * 使用FFprobe查找指定时间点附近的关键帧时间戳
+     *
+     * @param ffmpegPath ffmpeg可执行文件所在目录
+     * @param videoPath  视频文件路径
+     * @param targetTime 目标时间（秒）
+     * @return 最接近且不大于目标时间的关键帧时间戳
+     */
+    private static double findNearestKeyFrame(String ffmpegPath, String videoPath, double targetTime) throws IOException, InterruptedException {
+        // 构建ffprobe的完整路径
+        String ffprobePath;
+        if (ffmpegPath == null) {
+            ffprobePath = "ffprobe"; // 使用系统PATH中的ffprobe
+        } else {
+            Path ffmpegBinPath = Paths.get(ffmpegPath);
+            // 检查路径是否指向可执行文件或目录
+            if (ffmpegBinPath.toFile().isDirectory()) {
+                // 如果是目录，添加ffprobe可执行文件名
+                ffprobePath = ffmpegBinPath.resolve("ffprobe.exe").toString();
+            } else {
+                // 如果是可执行文件路径，替换为ffprobe
+                String parentPath = ffmpegBinPath.getParent().toString();
+                ffprobePath = Paths.get(parentPath, "ffprobe.exe").toString();
+            }
+        }
+
+
+        // 构建FFprobe命令获取关键帧列表
+        ProcessBuilder pb = new ProcessBuilder(
+                ffprobePath,
+                "-select_streams", "v",      // 只处理视频流
+                "-skip_frame", "nokey",      // 只返回关键帧
+                "-show_entries", "frame=pts_time",
+                "-of", "csv=print_section=0",
+                "-read_intervals", "%+#1",   // 性能优化: 只读取必要部分
+                videoPath);
+
+        // 启动进程并获取输出
+        Process process = pb.start();
+        List<Double> keyFrames = new ArrayList<>();
+
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(process.getInputStream()))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                try {
+                    double pts = Double.parseDouble(line.trim());
+                    keyFrames.add(pts);
+                } catch (NumberFormatException e) {
+                    // 忽略格式错误的行
+                }
+            }
+        }
+
+        // 等待进程结束
+        process.waitFor(1, TimeUnit.SECONDS);
+
+        if (keyFrames.isEmpty()) {
+            return 0; // 如果没有找到关键帧，返回0
+        }
+
+        // 查找最接近的关键帧
+        return findClosest(keyFrames, targetTime);
+    }
+
+    /**
+     * 在有序列表中找到最接近目标值的元素
+     */
+    private static double findClosest(List<Double> list, double target) {
+        int left = 0;
+        int right = list.size() - 1;
+        int mid = 0;
+
+        // 二分查找
+        while (left <= right) {
+            mid = left + (right - left) / 2;
+            double midVal = list.get(mid);
+
+            if (midVal < target) {
+                left = mid + 1;
+            } else if (midVal > target) {
+                right = mid - 1;
+            } else {
+                return midVal; // 精确匹配
+            }
+        }
+
+        // 确定最接近的值
+        if (left >= list.size()) {
+            return list.get(right);
+        } else if (right < 0) {
+            return list.get(left);
+        } else {
+            double leftDiff = Math.abs(list.get(left) - target);
+            double rightDiff = Math.abs(list.get(right) - target);
+            return leftDiff < rightDiff ? list.get(left) : list.get(right);
+        }
+    }
+
+    /**
+     * 从TS文件名中解析出文件序号
+     *
+     * @param tsFileName TS文件名，如"00001.ts"
+     * @return 文件序号
+     */
+    private static int parseFileNumberFromTsName(String tsFileName) {
+        try {
+            String fileNumberStr = tsFileName.replace(HlsFileEnum.TS.getSuffix(), "");
+            return Integer.parseInt(fileNumberStr);
+        } catch (NumberFormatException e) {
+            throw new RuntimeException("无效的TS文件名格式: " + tsFileName, e);
+        }
+    }
+
+    /**
+     * 从m3u8内容中解析指定序号切片的开始时间
+     *
+     * @param m3u8Content m3u8文件内容
+     * @param fileNumber  文件序号
+     * @return 开始时间（秒）
+     */
+    private static long parseStartTimeFromM3u8(String m3u8Content, int fileNumber) {
+        // 解析m3u8文件，计算第fileNumber个切片的开始时间
+        String[] lines = m3u8Content.split("\n");
+        long startTime = 0;
+
+        int currentSegment = 0;
+        for (String line : lines) {
+            line = line.trim();
+            if (line.startsWith("#EXTINF:")) {
+                if (currentSegment == fileNumber) {
+                    return startTime;
+                }
+                // 提取时长信息
+                String durationStr = line.substring(8, line.length() - 1); // 去掉"#EXTINF:"和逗号
+                int duration = (int) Math.ceil(Double.parseDouble(durationStr));
+                startTime += duration;
+                currentSegment++;
+            }
+        }
+
+        // 如果没有找到对应序号的切片，返回计算得出的时间
+        return startTime;
+    }
+
+    /**
+     * 从m3u8内容中解析指定序号切片的时长
+     *
+     * @param m3u8Content m3u8文件内容
+     * @param fileNumber  文件序号
+     * @return 切片时长（秒）
+     */
+    private static int parseDurationFromM3u8(String m3u8Content, int fileNumber) {
+        String[] lines = m3u8Content.split("\n");
+
+        int currentSegment = 0;
+        for (String line : lines) {
+            line = line.trim();
+            if (line.startsWith("#EXTINF:")) {
+                if (currentSegment == fileNumber) {
+                    // 提取时长信息
+                    String durationStr = line.substring(8, line.length() - 1); // 去掉"#EXTINF:"和逗号
+                    return (int) Math.ceil(Double.parseDouble(durationStr));
+                }
+                currentSegment++;
+            }
+        }
+
+        // 如果没有找到，默认返回10秒
+        return 10;
+    }
+
+    /**
      * 使用ffmpeg获取视频时长
      *
      * @param ffmpegPath ffmpeg可执行文件所在目录（若已在系统PATH中可直接传入null）
-     * @param videoPath 视频文件路径
+     * @param videoPath  视频文件路径
      * @return 视频时长（单位秒），四舍五入保留六位小数
      */
     public static BigDecimal getVideoDuration(String ffmpegPath, String videoPath) {
@@ -120,25 +291,25 @@ public class FFmpegUtil {
         }
     }
 
-    public static void getTsFile(String mediaFullPath, String fileName, ServletOutputStream outputStream, Integer segmentDuration) {
+    public static void getTsFile(String mediaFullPath, String fileName, ServletOutputStream outputStream, Integer segmentDuration, String ffmpegPath, String m3u8Content) {
         try {
             // 从文件名中提取序号，例如从"00004.ts"中提取出4
-            String fileNumberStr = fileName.replace(HlsFileEnum.TS.getSuffix(), "");
-            int fileNumber = Integer.parseInt(fileNumberStr);
-
-            // 根据序号和切片时长计算起始时间
-            // 序号从0开始，所以第n个切片的起始时间 = n * segmentDuration
-            long startTime = (long) fileNumber * segmentDuration;
+//            String fileNumberStr = fileName.replace(HlsFileEnum.TS.getSuffix(), "");
+//            int fileNumber = Integer.parseInt(fileNumberStr);
+//
+//            // 根据序号和切片时长计算起始时间
+//            // 序号从0开始，所以第n个切片的起始时间 = n * segmentDuration
+//            long startTime = (long) fileNumber * segmentDuration;
 
             // 调用sliceMediaToTs方法生成切片
             sliceMediaToTs(
-                    null,                    // ffmpegPath，使用系统PATH中的ffmpeg
+                    ffmpegPath,                    // ffmpegPath，使用系统PATH中的ffmpeg
                     mediaFullPath,           // 输入视频文件路径
                     outputStream,            // 输出流
-                    startTime,               // 起始时间
-                    segmentDuration.longValue(), // 切片时长
                     false,                   // enableHardwareEncoding
-                    false                    // useGPUAcceleration
+                    false,                   // useGPUAcceleration
+                    m3u8Content,
+                    fileName
             );
 
         } catch (NumberFormatException e) {

@@ -15,7 +15,12 @@ import org.springframework.context.annotation.Configuration;
 public class AppConfig {
 
     /**
-     * 切片时长（单位：秒）
+     * 切片时长（单位：毫秒）
      */
     private Integer segmentDuration;
+
+    /**
+     * FFmpeg路径
+     */
+    private String ffmpegPath;
 }

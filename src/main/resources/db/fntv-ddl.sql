@@ -11,9 +11,11 @@ CREATE TABLE IF NOT EXISTS fn_media_info
     m3u8_content              TEXT,
     create_by                 VARCHAR(255),
     update_by                 VARCHAR(255),
-    create_time               TIMESTAMP,
-    update_time               TIMESTAMP
+    create_time               TIMESTAMP default CURRENT_TIMESTAMP,
+    update_time               TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 );
+CREATE UNIQUE INDEX IF NOT EXISTS idx_uk_media_guid ON fn_media_info (media_guid);
+
 COMMENT ON TABLE fn_media_info IS '飞牛媒体信息表';
 COMMENT ON COLUMN fn_media_info.id IS '主键';
 COMMENT ON COLUMN fn_media_info.media_name IS '媒体名称';

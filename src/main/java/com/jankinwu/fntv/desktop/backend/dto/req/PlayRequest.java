@@ -11,4 +11,6 @@ import lombok.Data;
 public class PlayRequest {
 
     private String videoPath;
+
+    private String mediaGuid;
 }

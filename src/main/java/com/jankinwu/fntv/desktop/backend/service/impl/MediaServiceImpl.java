@@ -1,6 +1,8 @@
 package com.jankinwu.fntv.desktop.backend.service.impl;
 
 import com.jankinwu.fntv.desktop.backend.config.AppConfig;
+import com.jankinwu.fntv.desktop.backend.dto.req.PlayRequest;
+import com.jankinwu.fntv.desktop.backend.dto.resp.PlayResponse;
 import com.jankinwu.fntv.desktop.backend.repository.FnMediaInfoRepository;
 import com.jankinwu.fntv.desktop.backend.utils.FFmpegUtil;
 import com.jankinwu.fntv.desktop.backend.repository.domain.FnMediaInfoDO;
@@ -28,8 +30,8 @@ public class MediaServiceImpl implements MediaService {
     private final AppConfig appConfig;
 
     @Override
-    public void getM3u8File(String mediaCode, ServletOutputStream outputStream) {
-        FnMediaInfoDO mediaInfo = fnMediaInfoRepository.getByMediaCode(mediaCode);
+    public void getM3u8File(String mediaGuid, ServletOutputStream outputStream) {
+        FnMediaInfoDO mediaInfo = fnMediaInfoRepository.getByMediaGuid(mediaGuid);
         if (Objects.nonNull(mediaInfo)) {
             String m3u8Content = mediaInfo.getM3u8Content();
             try {
@@ -62,11 +64,30 @@ public class MediaServiceImpl implements MediaService {
     }
 
     @Override
-    public void getTsFile(String mediaCode, String fileName, ServletOutputStream outputStream) {
-        FnMediaInfoDO mediaInfo = fnMediaInfoRepository.getByMediaCode(mediaCode);
+    public void getTsFile(String mediaGuid, String fileName, ServletOutputStream outputStream) {
+        FnMediaInfoDO mediaInfo = fnMediaInfoRepository.getByMediaGuid(mediaGuid);
         if (Objects.nonNull(mediaInfo)) {
             String mediaFullPath = mediaInfo.getMediaFullPath();
-            FFmpegUtil.getTsFile(mediaFullPath, fileName, outputStream, appConfig.getSegmentDuration());
+            FFmpegUtil.getTsFile(mediaFullPath, fileName, outputStream, appConfig.getSegmentDuration(), appConfig.getFfmpegPath(), mediaInfo.getM3u8Content());
         }
+    }
+
+    @Override
+    public void saveOrUpdateMediaInfo(PlayRequest request) {
+        FnMediaInfoDO mediaInfo = fnMediaInfoRepository.getByMediaGuid(request.getMediaGuid());
+        if (Objects.isNull(mediaInfo)) {
+            mediaInfo = FnMediaInfoDO.builder()
+                    .mediaGuid(request.getMediaGuid())
+                    .mediaFullPath(request.getVideoPath())
+                    .build();
+            fnMediaInfoRepository.save(mediaInfo);
+            return;
+        }
+        fnMediaInfoRepository.updateById(mediaInfo);
+    }
+
+    @Override
+    public PlayResponse getPlayResponse(String mediaGuid) {
+        return PlayResponse.builder().playLink("/v/media/" + mediaGuid + "/preset.m3u8").build();
     }
 }

@@ -39,6 +39,10 @@ dependencies {
     implementation 'com.baomidou:mybatis-plus-spring-boot3-starter:3.5.5'
 }
 
-//tasks.named('test') {
-//    useJUnitPlatform()
+tasks.named('test', Test) {
+    useJUnitPlatform()
+}
+
+//test {
+//    jvmArgs '-Xmx1024m', '-XX:MaxPermSize=256m'
 //}
