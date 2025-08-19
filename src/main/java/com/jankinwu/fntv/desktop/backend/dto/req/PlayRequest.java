@@ -1,9 +1,9 @@
-package com.jankinwu.fntvdesktopbackend.dto.req;
+package com.jankinwu.fntv.desktop.backend.dto.req;
 
 import lombok.Data;
 
 /**
- * @author 皖刚
+ * @author Jankin-Wu
  * @description 视频转HLS协议请求
  * @date 2025-08-18 11:12
  **/

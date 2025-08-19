@@ -1,4 +1,4 @@
-package com.jankinwu.fntvdesktopbackend.config;
+package com.jankinwu.fntv.desktop.backend.config;
 
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;

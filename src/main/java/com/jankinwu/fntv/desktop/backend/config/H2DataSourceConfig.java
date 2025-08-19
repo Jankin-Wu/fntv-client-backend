@@ -1,4 +1,4 @@
-package com.jankinwu.fntvdesktopbackend.config;
+package com.jankinwu.fntv.desktop.backend.config;
 
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
@@ -9,6 +9,7 @@ import org.springframework.jdbc.datasource.init.ScriptUtils;
 import org.springframework.stereotype.Service;
 
 import javax.sql.DataSource;
+import java.io.File;
 
 /**
  * @author jankinwu
@@ -40,20 +41,21 @@ public class H2DataSourceConfig {
     public void init() throws Exception {
         //初始化本地数据库
         //获取系统用户目录
-//        String userHome = System.getProperty("user.home");
+        String userHome = System.getProperty("user.home");
         // 创建一个标识文件,只有在第一次初始化数据库时会创建,如果系统用户目录下有这个文件,就不会重新执行sql脚本
-//        File f = new File(userHome + File.separator + "aoe_h2.lock");
-//        if (!f.exists()) {
-//            log.info("--------------初始化h2数据----------------------");
-//            f.createNewFile();
+        File f = new File(userHome + File.separator + "fn_tv.lock");
+        if (!f.exists()) {
+            log.info("--------------初始化h2数据库----------------------");
+            f.createNewFile();
             // 加载资源文件
-//            Resource resource = applicationContextRegister.getResource(SCHEMA);
+            Resource resource = applicationContextRegister.getResource(SCHEMA);
             // 手动执行SQL语句
-//            ScriptUtils.executeSqlScript(dataSource.getConnection(), resource);
-//        }
+            ScriptUtils.executeSqlScript(dataSource.getConnection(), resource);
+        }
         // 加载资源文件
         Resource resource = applicationContextRegister.getResource(SCHEMA);
         // 手动执行SQL语句
         ScriptUtils.executeSqlScript(dataSource.getConnection(), resource);
+        log.info("--------------h2数据库初始化完成----------------------");
     }
 }

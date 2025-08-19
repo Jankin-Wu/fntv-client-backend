@@ -31,9 +31,9 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    implementation 'org.springframework.boot:spring-boot-configuration-processor'
     implementation 'org.bytedeco:javacv:1.5.12'
     implementation 'org.bytedeco:ffmpeg-platform:7.1.1-1.5.12'
-    // https://mvnrepository.com/artifact/com.github.kokorin.jaffree/jaffree
     implementation 'com.github.kokorin.jaffree:jaffree:2024.08.29'
     implementation 'com.h2database:h2:2.2.220'
     implementation 'com.baomidou:mybatis-plus-spring-boot3-starter:3.5.5'

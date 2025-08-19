@@ -9,11 +9,10 @@ spring:
     password: fntv2025
     h2:
       console:
-        # h2???????????????????
         path: /h2-console
         enabled: true
 logging:
-  # logback.xml???????
+  # logback.xml
   config: classpath:logback-spring.xml
   level:
     root: INFO
@@ -21,7 +20,7 @@ logging:
 mybatis-plus:
   mapper-locations: classpath*:mapper/*.xml
   configuration:
-    #??SQL??
-    #    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
-    ##????
+#    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
     map-underscore-to-camel-case: true
+app:
+  segment-duration: 4

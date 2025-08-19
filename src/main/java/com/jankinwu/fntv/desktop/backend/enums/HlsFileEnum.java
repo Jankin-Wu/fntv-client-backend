@@ -1,4 +1,4 @@
-package com.jankinwu.fntvdesktopbackend.enums;
+package com.jankinwu.fntv.desktop.backend.enums;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
