@@ -7,12 +7,14 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.experimental.Accessors;
 
 /**
  * 飞牛媒体信息表
  * @TableName FN_MEDIA_INFO
  */
 @EqualsAndHashCode(callSuper = true)
+@Accessors(chain = true)
 @Builder
 @TableName(value ="FN_MEDIA_INFO")
 @Data
@@ -54,10 +56,10 @@ public class FnMediaInfoDO extends BaseDomain{
     private String mediaFormat;
 
     /**
-     * 媒体时长
+     * 媒体时长(秒)
      */
     @TableField(value = "DURATION")
-    private Long duration;
+    private Long mediaDuration;
 
     /**
      * 媒体分类
