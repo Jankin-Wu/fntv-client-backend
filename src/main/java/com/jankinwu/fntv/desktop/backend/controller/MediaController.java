@@ -6,6 +6,7 @@ import com.jankinwu.fntv.desktop.backend.enums.HlsFileEnum;
 import com.jankinwu.fntv.desktop.backend.service.MediaService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
  * @description 视频转换
  * @date 2025-08-18 11:02
  **/
+@Slf4j
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/v")
@@ -35,6 +37,7 @@ public class MediaController {
             response.setHeader("Cache-Control", "no-cache");
             response.setHeader("Connection", "keep-alive");
         } catch (Exception e) {
+            log.error("Error converting video: ", e);
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         }
     }

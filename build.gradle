@@ -37,6 +37,8 @@ dependencies {
     implementation 'com.github.kokorin.jaffree:jaffree:2024.08.29'
     implementation 'com.h2database:h2:2.2.220'
     implementation 'com.baomidou:mybatis-plus-spring-boot3-starter:3.5.5'
+    implementation 'com.alibaba.fastjson2:fastjson2:2.0.40'
+    implementation 'org.apache.commons:commons-lang3'
 }
 
 tasks.named('test', Test) {

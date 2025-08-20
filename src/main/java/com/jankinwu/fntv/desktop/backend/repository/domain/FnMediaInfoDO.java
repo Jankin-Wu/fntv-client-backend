@@ -70,4 +70,28 @@ public class FnMediaInfoDO extends BaseDomain{
      */
     @TableField(value = "M3U8_CONTENT")
     private String m3u8Content;
+
+    /**
+     * ts文件起始时间map
+     */
+    @TableField(value = "TS_START_TIME_MAP")
+    private String tsStartTimeMap;
+
+    /**
+     * 颜色范围类型
+     */
+    @TableField(value = "COLOR_RANGE_TYPE")
+    private String colorRangeType;
+
+    /**
+     * 码率
+     */
+    @TableField(value = "BPS")
+    private Long bps;
+
+    /**
+     * 平均帧率
+     */
+    @TableField(value = "AVG_FRAME_RATE")
+    private Integer avgFrameRate;
 }

@@ -1,18 +1,22 @@
 package com.jankinwu.fntv.desktop.backend.service.impl;
 
+import com.alibaba.fastjson2.JSONObject;
 import com.jankinwu.fntv.desktop.backend.config.AppConfig;
 import com.jankinwu.fntv.desktop.backend.dto.req.PlayRequest;
 import com.jankinwu.fntv.desktop.backend.dto.resp.PlayResponse;
+import com.jankinwu.fntv.desktop.backend.enums.HlsFileEnum;
 import com.jankinwu.fntv.desktop.backend.repository.FnMediaInfoRepository;
-import com.jankinwu.fntv.desktop.backend.utils.FFmpegUtil;
 import com.jankinwu.fntv.desktop.backend.repository.domain.FnMediaInfoDO;
 import com.jankinwu.fntv.desktop.backend.service.MediaService;
+import com.jankinwu.fntv.desktop.backend.utils.FFmpegUtil;
 import jakarta.servlet.ServletOutputStream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -66,9 +70,19 @@ public class MediaServiceImpl implements MediaService {
     @Override
     public void getTsFile(String mediaGuid, String fileName, ServletOutputStream outputStream) {
         FnMediaInfoDO mediaInfo = fnMediaInfoRepository.getByMediaGuid(mediaGuid);
+
         if (Objects.nonNull(mediaInfo)) {
             String mediaFullPath = mediaInfo.getMediaFullPath();
-            FFmpegUtil.getTsFile(mediaFullPath, fileName, outputStream, appConfig.getSegmentDuration(), appConfig.getFfmpegPath(), mediaInfo.getM3u8Content());
+            String tsStartTimeMapStr = mediaInfo.getTsStartTimeMap();
+            if (StringUtils.isNotBlank(tsStartTimeMapStr)) {
+                Map tsStartTimeMap = JSONObject.parseObject(tsStartTimeMapStr, Map.class);
+                Long startTime = Long.valueOf(tsStartTimeMap.get(fileName).toString());
+                int nextFileNumber = FFmpegUtil.parseFileNumberFromTsName(fileName) + 1;
+                String nextFileName = String.format("%05d", nextFileNumber) + HlsFileEnum.TS.getSuffix();
+                Long endTime = Long.valueOf(tsStartTimeMap.get(nextFileName).toString());
+                FFmpegUtil.getTsFile(mediaFullPath, fileName, outputStream, appConfig.getSegmentDuration(),
+                        appConfig.getFfmpegPath(), mediaInfo.getM3u8Content(), startTime, endTime);
+            }
         }
     }
 

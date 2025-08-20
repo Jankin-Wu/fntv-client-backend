@@ -9,10 +9,14 @@ CREATE TABLE IF NOT EXISTS fn_media_info
     duration                  INT8,
     category                  VARCHAR(20),
     m3u8_content              TEXT,
+    avg_frame_rate            INT4,
+    bps                       INT8,
+    color_range_type          VARCHAR(20),
+    ts_start_time_map         TEXT,
     create_by                 VARCHAR(255),
     update_by                 VARCHAR(255),
     create_time               TIMESTAMP default CURRENT_TIMESTAMP,
-    update_time               TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    update_time               TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_uk_media_guid ON fn_media_info (media_guid);
 
