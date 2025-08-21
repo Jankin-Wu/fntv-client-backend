@@ -1,0 +1,27 @@
+server:
+  port: 8080
+spring:
+  datasource:
+    url: jdbc:h2:file:./fntv
+    driver-class-name: org.h2.Driver
+    username: root
+    password: fntv2025
+    h2:
+      console:
+        path: /h2-console
+        enabled: true
+logging:
+  # logback.xml
+  config: classpath:logback-spring.xml
+  level:
+    root: INFO
+
+mybatis-plus:
+  mapper-locations: classpath*:mapper/*.xml
+  configuration:
+#    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    map-underscore-to-camel-case: true
+app:
+  segment-duration: 4000
+  # ffmpeg路径，如果没有在系统环境变量中配置ffmpeg的bin目录，必填
+  ffmpeg-path:

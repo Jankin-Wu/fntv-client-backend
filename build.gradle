@@ -5,7 +5,7 @@ plugins {
 }
 
 group = 'com.jankinwu'
-version = '0.0.1-SNAPSHOT'
+version = '0.1.0'
 description = 'fntv-desktop-backend'
 
 java {
@@ -47,6 +47,7 @@ tasks.named('test', Test) {
     useJUnitPlatform()
 }
 
-//test {
-//    jvmArgs '-Xmx1024m', '-XX:MaxPermSize=256m'
-//}
+bootJar {
+    version = version
+}
+
