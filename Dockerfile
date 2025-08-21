@@ -9,7 +9,7 @@ RUN apt-get update && \
 
 COPY build/libs/*.jar /app/app.jar
 
-VOLUME '/logs'
+VOLUME '/app/logs'
 
 WORKDIR /app
 

@@ -34,7 +34,7 @@ docker run -d \
 --restart=always \
 --name fntv-desktop-backend \
 -p 8080:8080 \
--v /vol2/1000/video:/vol2/1000/video
+-v /vol2/1000/video:/vol2/1000/video \
 fntv-desktop-backend:latest
 ```
 ### 本地部署
@@ -45,7 +45,7 @@ sudo apt update && sudo apt install -y ffmpeg
 ```
 
 ```shell
-java -jar build/libs/fntv-desktop-backend-*.jar
+java -jar build/libs/fntv-desktop-backend-*.jar --spring.profiles.active=release
 ```
 ## API
 

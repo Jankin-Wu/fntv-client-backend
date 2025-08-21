@@ -41,9 +41,9 @@ public class H2DataSourceConfig {
     public void init() throws Exception {
         //初始化本地数据库
         //获取系统用户目录
-        String userHome = System.getProperty("user.home");
+        String userHome = System.getProperty("user.dir");
         // 创建一个标识文件,只有在第一次初始化数据库时会创建,如果系统用户目录下有这个文件,就不会重新执行sql脚本
-        File f = new File(userHome + File.separator + "fn_tv.lock");
+        File f = new File(userHome + File.separator + "fn_tv_db.lock");
         if (!f.exists()) {
             log.info("--------------初始化h2数据库----------------------");
             f.createNewFile();
