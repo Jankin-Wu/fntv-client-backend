@@ -39,6 +39,8 @@ dependencies {
     implementation 'com.baomidou:mybatis-plus-spring-boot3-starter:3.5.5'
     implementation 'com.alibaba.fastjson2:fastjson2:2.0.40'
     implementation 'org.apache.commons:commons-lang3'
+    implementation 'org.mapstruct:mapstruct:1.6.3'
+    annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
 }
 
 tasks.named('test', Test) {

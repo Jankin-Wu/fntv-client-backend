@@ -18,6 +18,7 @@ class BuildIndexTaskServiceTest {
     @Test
     void saveOrUpdateMediaInfo() {
         String mediaGuid = UUID.randomUUID().toString().replace("-", "");
-        buildIndexTaskService.saveOrUpdateMediaInfo("d85a782b26e943c5bb9135f847c7bc66", "测试视频", "E:\\Vedio\\BigBuckBunny.mp4", "TV", "MP4", 596L, "动画");
+        buildIndexTaskService.saveOrUpdateMediaInfo("d85a782b26e943c5bb9135f847c7bc66", "测试视频",
+                "D:\\video\\BigBuckBunny.mp4", "TV", "MP4", 596L, "动画", 24);
     }
 }

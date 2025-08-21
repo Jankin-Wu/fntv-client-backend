@@ -42,7 +42,7 @@ public class MediaController {
         }
     }
 
-    @PostMapping("/api/v1/play/play")
+    @PostMapping("/api/v1/play")
     public PlayResponse play(@RequestBody PlayRequest request) {
         mediaService.saveOrUpdateMediaInfo(request);
         return mediaService.getPlayResponse(request.getMediaGuid());

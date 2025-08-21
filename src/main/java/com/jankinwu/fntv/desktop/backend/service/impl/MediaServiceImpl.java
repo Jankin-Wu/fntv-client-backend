@@ -1,18 +1,26 @@
 package com.jankinwu.fntv.desktop.backend.service.impl;
 
+import com.jankinwu.fntv.desktop.backend.assembler.MediaInfoAssembler;
+import com.jankinwu.fntv.desktop.backend.cache.MediaInfoCache;
 import com.jankinwu.fntv.desktop.backend.config.AppConfig;
+import com.jankinwu.fntv.desktop.backend.dto.MediaInfoDTO;
 import com.jankinwu.fntv.desktop.backend.dto.req.PlayRequest;
 import com.jankinwu.fntv.desktop.backend.dto.resp.PlayResponse;
 import com.jankinwu.fntv.desktop.backend.repository.FnMediaInfoRepository;
 import com.jankinwu.fntv.desktop.backend.repository.domain.FnMediaInfoDO;
 import com.jankinwu.fntv.desktop.backend.service.MediaService;
 import com.jankinwu.fntv.desktop.backend.utils.FFmpegTranscodingUtil;
+import com.jankinwu.fntv.desktop.backend.utils.M3u8Util;
 import jakarta.servlet.ServletOutputStream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 /**
@@ -29,76 +37,79 @@ public class MediaServiceImpl implements MediaService {
 
     private final AppConfig appConfig;
 
+    private final MediaInfoCache mediaInfoCache;
+
+    private final MediaInfoAssembler mediaInfoAssembler;
+
     @Override
     public void getM3u8File(String mediaGuid, ServletOutputStream outputStream) {
-        FnMediaInfoDO mediaInfo = fnMediaInfoRepository.getByMediaGuid(mediaGuid);
-        if (Objects.nonNull(mediaInfo)) {
-            String m3u8Content = mediaInfo.getM3u8Content();
+        MediaInfoDTO mediainfo = getMediaInfo(mediaGuid);
+        if (Objects.nonNull(mediainfo) && StringUtils.isNotBlank(mediainfo.getM3u8Content())) {
             try {
-                // 创建临时文件
-                File tempFile = File.createTempFile("m3u8_", ".m3u8");
-
-                // 将m3u8内容写入临时文件
-                try (FileWriter fileWriter = new FileWriter(tempFile);
-                     BufferedWriter bufferedWriter = new BufferedWriter(fileWriter)) {
-                    bufferedWriter.write(m3u8Content);
-                }
-
-                // 将文件内容写入输出流
-                try (FileInputStream fis = new FileInputStream(tempFile);
-                     BufferedInputStream bis = new BufferedInputStream(fis)) {
-                    byte[] buffer = new byte[1024];
-                    int bytesRead;
-                    while ((bytesRead = bis.read(buffer)) != -1) {
-                        outputStream.write(buffer, 0, bytesRead);
-                    }
-                }
-
-                // 删除临时文件
-                tempFile.delete();
+                outputStream.write(mediainfo.getM3u8Content().getBytes(StandardCharsets.UTF_8));
+                outputStream.flush();
+                return;
             } catch (IOException e) {
-                log.error("处理M3U8文件时发生错误", e);
-//                throw new RuntimeException("处理M3U8文件时发生错误", e);
+                log.error("写入M3U8文件时发生错误", e);
             }
         }
+
+    }
+
+    private MediaInfoDTO getMediaInfo(String mediaGuid) {
+        MediaInfoDTO cache = mediaInfoCache.getCache(mediaGuid);
+        if (Objects.nonNull(cache)) {
+            return cache;
+        }
+        FnMediaInfoDO mediaInfo = fnMediaInfoRepository.getByMediaGuid(mediaGuid);
+        if (Objects.nonNull(mediaInfo)) {
+            MediaInfoDTO mediaInfoDTO = mediaInfoAssembler.toMediaInfoDTO(mediaInfo);
+            mediaInfoCache.saveCache(mediaGuid, mediaInfoDTO);
+            return mediaInfoDTO;
+        }
+        return null;
     }
 
     @Override
     public void getTsFile(String mediaGuid, String fileName, ServletOutputStream outputStream) {
-        FnMediaInfoDO mediaInfo = fnMediaInfoRepository.getByMediaGuid(mediaGuid);
+        MediaInfoDTO mediaInfo = getMediaInfo(mediaGuid);
 
-//        if (Objects.nonNull(mediaInfo)) {
-//            String mediaFullPath = mediaInfo.getMediaFullPath();
-//            String tsStartTimeMapStr = mediaInfo.getTsStartTimeMap();
-//            if (StringUtils.isNotBlank(tsStartTimeMapStr)) {
-//                Map tsStartTimeMap = JSONObject.parseObject(tsStartTimeMapStr, Map.class);
-//                Long startTime = Long.valueOf(tsStartTimeMap.get(fileName).toString());
-//                int nextFileNumber = FFmpegUtil.parseFileNumberFromTsName(fileName) + 1;
-//                String nextFileName = String.format("%05d", nextFileNumber) + HlsFileEnum.TS.getSuffix();
-//                Long endTime = Long.valueOf(tsStartTimeMap.get(nextFileName).toString());
-//                FFmpegUtil.getTsFile(mediaFullPath, fileName, outputStream, appConfig.getSegmentDuration(),
-//                        appConfig.getFfmpegPath(), mediaInfo.getM3u8Content(), startTime, endTime);
-//            }
-//        }
         if (Objects.nonNull(mediaInfo)) {
             String mediaFullPath = mediaInfo.getMediaFullPath();
             FFmpegTranscodingUtil.sliceMediaToTs(appConfig.getFfmpegPath(), mediaFullPath, outputStream,
-                    true, false, fileName, appConfig.getSegmentDuration());
+                    true, fileName, appConfig.getSegmentDuration(), mediaInfo.getAvgFrameRate());
         }
     }
 
     @Override
     public void saveOrUpdateMediaInfo(PlayRequest request) {
         FnMediaInfoDO mediaInfo = fnMediaInfoRepository.getByMediaGuid(request.getMediaGuid());
-        if (Objects.isNull(mediaInfo)) {
-            mediaInfo = FnMediaInfoDO.builder()
-                    .mediaGuid(request.getMediaGuid())
-                    .mediaFullPath(request.getVideoPath())
-                    .build();
-            fnMediaInfoRepository.save(mediaInfo);
+        String m3u8Content = M3u8Util.generateM3u8Content(BigDecimal.valueOf(request.getMediaDuration()),
+                BigDecimal.valueOf(appConfig.getSegmentDuration()).divide(BigDecimal.valueOf(1000),2, RoundingMode.HALF_UP));
+        if (Objects.nonNull(mediaInfo)) {
+            mediaInfo
+                    .setMediaName(request.getMediaName())
+                    .setMediaFullPath(request.getMediaFullPath())
+                    .setMediaDuration(request.getMediaDuration())
+                    .setMediaFormat(request.getMediaFormat())
+                    .setCategory(request.getCategory())
+                    .setAvgFrameRate(request.getAvgFrameRate())
+                    .setM3u8Content(m3u8Content);
+            fnMediaInfoRepository.updateById(mediaInfo);
             return;
         }
-        fnMediaInfoRepository.updateById(mediaInfo);
+        mediaInfo = FnMediaInfoDO.builder()
+                .mediaGuid(request.getMediaGuid())
+                .mediaName(request.getMediaName())
+                .mediaFullPath(request.getMediaFullPath())
+                .mediaType(request.getMediaType())
+                .mediaFormat(request.getMediaFormat())
+                .mediaDuration(request.getMediaDuration())
+                .category(request.getCategory())
+                .m3u8Content(m3u8Content)
+                .avgFrameRate(request.getAvgFrameRate())
+                .build();
+        fnMediaInfoRepository.save(mediaInfo);
     }
 
     @Override

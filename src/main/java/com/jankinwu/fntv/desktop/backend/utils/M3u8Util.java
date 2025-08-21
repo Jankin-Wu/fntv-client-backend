@@ -36,12 +36,20 @@ public class M3u8Util {
         // 为每个切片添加信息
         BigDecimal remainingDuration = videoDuration;
         for (int i = 0; i < segmentCount; i++) {
-            // 最后一个片段可能需要调整时长
-            BigDecimal currentSegmentDuration = remainingDuration.min(segmentDuration);
+            // 最后一个片段需要特殊处理
+            BigDecimal currentSegmentDuration;
+            if (i == segmentCount - 1) {
+                // 最后一个片段使用剩余的准确时长
+                currentSegmentDuration = remainingDuration;
+            } else {
+                // 其他片段使用标准时长
+                currentSegmentDuration = segmentDuration;
+            }
             joiner.add("#EXTINF:" + String.format("%.6f", currentSegmentDuration.doubleValue()) + ",");
             joiner.add(String.format("%05d.ts", i));
             remainingDuration = remainingDuration.subtract(currentSegmentDuration);
         }
+
 
         // 添加结束标记
         joiner.add("#EXT-X-ENDLIST");
@@ -83,8 +91,15 @@ public class M3u8Util {
         // 为每个切片添加信息
         BigDecimal remainingDuration = videoDuration;
         for (int i = 0; i < segmentCount; i++) {
-            // 最后一个片段可能需要调整时长
-            BigDecimal currentSegmentDuration = remainingDuration.min(segmentDuration);
+            // 最后一个片段需要特殊处理
+            BigDecimal currentSegmentDuration;
+            if (i == segmentCount - 1) {
+                // 最后一个片段使用剩余的准确时长
+                currentSegmentDuration = remainingDuration;
+            } else {
+                // 其他片段使用标准时长
+                currentSegmentDuration = segmentDuration;
+            }
             joiner.add("#EXTINF:" + String.format("%.6f", currentSegmentDuration.doubleValue()) + ",");
             joiner.add(String.format("%05d.ts", i));
             remainingDuration = remainingDuration.subtract(currentSegmentDuration);

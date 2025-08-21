@@ -1,19 +1,18 @@
-package com.jankinwu.fntv.desktop.backend.dto.req;
+package com.jankinwu.fntv.desktop.backend.dto;
 
+import lombok.Builder;
 import lombok.Data;
+import lombok.experimental.Accessors;
 
 /**
  * @author Jankin-Wu
- * @description 视频转HLS协议请求
- * @date 2025-08-18 11:12
+ * @description 媒体信息缓存实体
+ * @date 2025-08-21 11:23
  **/
 @Data
-public class PlayRequest {
-
-    /**
-     * 媒体GUID
-     */
-    private String mediaGuid;
+@Builder
+@Accessors(chain = true)
+public class MediaInfoDTO {
 
     /**
      * 媒体名称
@@ -26,12 +25,17 @@ public class PlayRequest {
     private String mediaFullPath;
 
     /**
+     * 媒体GUID
+     */
+    private String mediaGuid;
+
+    /**
      * 媒体类型
      */
     private String mediaType;
 
     /**
-     * 媒体包装格式
+     * 媒体格式
      */
     private String mediaFormat;
 
@@ -49,6 +53,11 @@ public class PlayRequest {
      * m3u8文件内容
      */
     private String m3u8Content;
+
+    /**
+     * ts文件起始时间map
+     */
+    private String tsStartTimeMap;
 
     /**
      * 颜色范围类型

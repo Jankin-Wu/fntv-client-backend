@@ -34,7 +34,7 @@ import java.util.concurrent.TimeUnit;
  * @date 2025-08-18 13:57
  **/
 @Slf4j
-public class FFmpegUtil {
+public class FFmpegStreamCopyUtil {
 
     /**
      * 对视频进行切片并输出为 TS 格式，保留原始码率、帧率以及分辨率
