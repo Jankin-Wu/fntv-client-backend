@@ -32,7 +32,18 @@ docker build -t fntv-desktop-backend:latest .
 docker build -f Dockerfile_nvidia -t fntv-desktop-backend:latest .
 ```
 #### 运行
-##### 使用核显转码（需要给容器安装核显相关驱动和库，比较麻烦）
+##### 使用 CPU 软解（对 CPU 性能有要求）
+```shell
+# -v 需要挂载存储视频文件的文件目录，容器挂载路径需要和宿主机路径保持一致，根据实际需求可挂载多个目录
+docker run -d \
+--restart=always \
+--name fntv-desktop-backend \
+-p 8080:8080 \
+-v /vol2/1000/video:/vol2/1000/video \
+fntv-desktop-backend:latest
+```
+
+##### 使用核显转码（需要给容器安装核显相关驱动和库，比较麻烦，暂时没成功）
 ```shell
 # -v 需要挂载存储视频文件的文件目录，容器挂载路径需要和宿主机路径保持一致，根据实际需求可挂载多个目录
 # --device /dev/dri:/dev/dri 为挂载核显驱动
