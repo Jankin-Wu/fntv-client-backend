@@ -1,5 +1,6 @@
 package com.jankinwu.fntv.desktop.backend.controller;
 
+import com.jankinwu.fntv.desktop.backend.dto.req.MediaInfoSaveRequest;
 import com.jankinwu.fntv.desktop.backend.dto.req.PlayRequest;
 import com.jankinwu.fntv.desktop.backend.dto.resp.PlayResponse;
 import com.jankinwu.fntv.desktop.backend.enums.HlsFileEnum;
@@ -17,12 +18,12 @@ import org.springframework.web.bind.annotation.*;
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/v")
+@RequestMapping("/v/media")
 public class MediaController {
 
     private final MediaService mediaService;
 
-    @GetMapping("/media/{mediaGuid}/{fileName}")
+    @GetMapping("/{mediaGuid}/{fileName}")
     public void getHlsFile(@PathVariable("mediaGuid") String mediaGuid, @PathVariable("fileName") String fileName, HttpServletResponse response) {
         try {
             if (fileName.endsWith(HlsFileEnum.M3U8.getSuffix())) {
@@ -42,9 +43,14 @@ public class MediaController {
         }
     }
 
-    @PostMapping("/api/v1/play")
-    public PlayResponse play(@RequestBody PlayRequest request) {
+    @PostMapping("/info/save")
+    public Boolean saveMediaInfo(@RequestBody MediaInfoSaveRequest request) {
         mediaService.saveOrUpdateMediaInfo(request);
+        return true;
+    }
+
+    @PostMapping("/play/info")
+    public PlayResponse play(@RequestBody PlayRequest request) {
         return mediaService.getPlayResponse(request.getMediaGuid());
     }
 

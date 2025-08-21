@@ -4,7 +4,7 @@ import com.jankinwu.fntv.desktop.backend.assembler.MediaInfoAssembler;
 import com.jankinwu.fntv.desktop.backend.cache.MediaInfoCache;
 import com.jankinwu.fntv.desktop.backend.config.AppConfig;
 import com.jankinwu.fntv.desktop.backend.dto.MediaInfoDTO;
-import com.jankinwu.fntv.desktop.backend.dto.req.PlayRequest;
+import com.jankinwu.fntv.desktop.backend.dto.req.MediaInfoSaveRequest;
 import com.jankinwu.fntv.desktop.backend.dto.resp.PlayResponse;
 import com.jankinwu.fntv.desktop.backend.repository.FnMediaInfoRepository;
 import com.jankinwu.fntv.desktop.backend.repository.domain.FnMediaInfoDO;
@@ -48,7 +48,6 @@ public class MediaServiceImpl implements MediaService {
             try {
                 outputStream.write(mediainfo.getM3u8Content().getBytes(StandardCharsets.UTF_8));
                 outputStream.flush();
-                return;
             } catch (IOException e) {
                 log.error("写入M3U8文件时发生错误", e);
             }
@@ -82,7 +81,7 @@ public class MediaServiceImpl implements MediaService {
     }
 
     @Override
-    public void saveOrUpdateMediaInfo(PlayRequest request) {
+    public void saveOrUpdateMediaInfo(MediaInfoSaveRequest request) {
         FnMediaInfoDO mediaInfo = fnMediaInfoRepository.getByMediaGuid(request.getMediaGuid());
         String m3u8Content = M3u8Util.generateM3u8Content(BigDecimal.valueOf(request.getMediaDuration()),
                 BigDecimal.valueOf(appConfig.getSegmentDuration()).divide(BigDecimal.valueOf(1000),2, RoundingMode.HALF_UP));
@@ -110,6 +109,16 @@ public class MediaServiceImpl implements MediaService {
                 .avgFrameRate(request.getAvgFrameRate())
                 .build();
         fnMediaInfoRepository.save(mediaInfo);
+        // 更新缓存
+        updateCache(mediaInfo);
+    }
+
+    private void updateCache(FnMediaInfoDO mediaInfo) {
+        MediaInfoDTO cache = mediaInfoCache.getCache(mediaInfo.getMediaGuid());
+        if (Objects.nonNull(cache)) {
+            MediaInfoDTO mediaInfoDTO = mediaInfoAssembler.toMediaInfoDTO(mediaInfo);
+            mediaInfoCache.saveCache(mediaInfo.getMediaGuid(), mediaInfoDTO);
+        }
     }
 
     @Override
