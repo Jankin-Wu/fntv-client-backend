@@ -29,7 +29,7 @@ docker build -t fntv-desktop-backend:latest .
 ```
 #### 运行
 ```shell
-# -v 需要挂载媒体库目录，有多少媒体库就要挂载多少个，并且容器挂载路径需要和宿主机路径保持一致
+# -v 需要挂载存储视频文件的文件目录，容器挂载路径需要和宿主机路径保持一致，根据实际需求可挂载多个目录
 docker run -d \
 --restart=always \
 --name fntv-desktop-backend \
