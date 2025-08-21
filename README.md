@@ -7,7 +7,7 @@
 ## 使用说明
 ### 克隆项目
 ```shell
-https://github.com/Jankin-Wu/fntv-desktop-backend.git
+git clone https://github.com/Jankin-Wu/fntv-desktop-backend.git
 ```
 ### 构建 Jar 包
 ```shell
@@ -27,12 +27,37 @@ cd fntv-desktop-backend
 ```shell
 docker build -t fntv-desktop-backend:latest .
 ```
+如果使用 Nvidia 显卡编解码：
+```shell
+docker build -f Dockerfile_nvidia -t fntv-desktop-backend:latest .
+```
 #### 运行
+##### 核显转码
+```shell
+# -v 需要挂载存储视频文件的文件目录，容器挂载路径需要和宿主机路径保持一致，根据实际需求可挂载多个目录
+# --device /dev/dri:/dev/dri 为挂载核显驱动
+docker run -d \
+--restart=always \
+--name fntv-desktop-backend \
+--device /dev/dri:/dev/dri \
+-p 8080:8080 \
+-v /vol2/1000/video:/vol2/1000/video \
+fntv-desktop-backend:latest
+```
+##### Nvidia 显卡转码
+1. 安装 NVIDIA Container Toolkit</br>
+**参考:**</br>
+[安装 NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)</br>
+[Linux 使用 CUDA Docker 镜像加速视频转码](https://www.cnblogs.com/myzony/p/18270956/linux-cuda-docker-video-transcoding)
+
+2. 启动容器
 ```shell
 # -v 需要挂载存储视频文件的文件目录，容器挂载路径需要和宿主机路径保持一致，根据实际需求可挂载多个目录
 docker run -d \
 --restart=always \
 --name fntv-desktop-backend \
+--gpus all \
+-e NVIDIA_DRIVER_CAPABILITIES=all \
 -p 8080:8080 \
 -v /vol2/1000/video:/vol2/1000/video \
 fntv-desktop-backend:latest
