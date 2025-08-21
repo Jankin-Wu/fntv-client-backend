@@ -20,7 +20,7 @@ cd fntv-desktop-backend
 # 打包并跳过测试
 ./gradlew bootJar -x test
 ```
-### Docker 部署（需要给容器安装显卡相关驱动，比较麻烦）
+### Docker 部署
 
 #### 构建 docker 镜像
 
@@ -32,7 +32,7 @@ docker build -t fntv-desktop-backend:latest .
 docker build -f Dockerfile_nvidia -t fntv-desktop-backend:latest .
 ```
 #### 运行
-##### 使用核显转码
+##### 使用核显转码（需要给容器安装核显相关驱动和库，比较麻烦）
 ```shell
 # -v 需要挂载存储视频文件的文件目录，容器挂载路径需要和宿主机路径保持一致，根据实际需求可挂载多个目录
 # --device /dev/dri:/dev/dri 为挂载核显驱动
