@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS fn_media_info
     m3u8_content              TEXT,
     avg_frame_rate            INT4,
     bps                       INT8,
+    codec_name                VARCHAR(20),
     color_range_type          VARCHAR(20),
     ts_start_time_map         TEXT,
     create_by                 VARCHAR(255),
@@ -32,6 +33,7 @@ COMMENT ON COLUMN fn_media_info.category IS '媒体分类';
 COMMENT ON COLUMN fn_media_info.m3u8_content IS 'm3u8文件内容';
 COMMENT ON COLUMN fn_media_info.avg_frame_rate IS '平均帧率';
 COMMENT ON COLUMN fn_media_info.bps IS '码率';
+COMMENT ON COLUMN fn_media_info.codec_name IS '编码格式名称';
 COMMENT ON COLUMN fn_media_info.color_range_type IS '颜色范围';
 COMMENT ON COLUMN fn_media_info.ts_start_time_map IS 'ts文件起始时间映射';
 COMMENT ON COLUMN fn_media_info.create_by IS '创建人';

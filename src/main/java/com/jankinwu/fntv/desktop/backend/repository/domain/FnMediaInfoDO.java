@@ -96,4 +96,10 @@ public class FnMediaInfoDO extends BaseDomain{
      */
     @TableField(value = "AVG_FRAME_RATE")
     private Integer avgFrameRate;
+
+    /**
+     * 编码格式
+     */
+    @TableField(value = "CODEC_NAME")
+    private String codec_name;
 }

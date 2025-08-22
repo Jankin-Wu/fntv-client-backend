@@ -46,11 +46,6 @@ public class MediaInfoSaveRequest {
     private String category;
 
     /**
-     * m3u8文件内容
-     */
-    private String m3u8Content;
-
-    /**
      * 颜色范围类型
      */
     private String colorRangeType;
@@ -64,4 +59,9 @@ public class MediaInfoSaveRequest {
      * 平均帧率
      */
     private Integer avgFrameRate;
+
+    /**
+     * 编码格式
+     */
+    private String codec_name;
 }
