@@ -1,11 +1,16 @@
-FROM openjdk:17-jdk-slim
+FROM akashisn/ffmpeg:7.0.2
 
 LABEL authors="JankinWu"
 
-RUN apt update \
-    && apt install -y ffmpeg \
-    && apt install -y libnvidia-encode-550 \
-    && rm -rf /var/lib/apt/lists/*
+# 设置 UTF-8 环境
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+ENV LANGUAGE=C.UTF-8
+
+# 更新包列表并安装 OpenJDK 17
+RUN apt update && \
+    apt install -y openjdk-17-jdk && \
+    rm -rf /var/lib/apt/lists/*
 
 COPY build/libs/*.jar /app/app.jar
 

@@ -27,9 +27,9 @@ cd fntv-desktop-backend
 ```shell
 docker build -t fntv-desktop-backend:latest .
 ```
-如果使用 Nvidia 显卡编解码：
+如果使用gpu编解码：
 ```shell
-docker build -f Dockerfile_nvidia -t fntv-desktop-backend:latest .
+docker build -f Dockerfile_hwaccel -t fntv-desktop-backend:latest .
 ```
 #### 运行
 ##### 使用 CPU 软解（对 CPU 性能有要求）
@@ -43,7 +43,7 @@ docker run -d \
 fntv-desktop-backend:latest
 ```
 
-##### 使用核显转码（需要给容器安装核显相关驱动和库，比较麻烦，暂时没成功）
+##### 使用核显转码
 ```shell
 # -v 需要挂载存储视频文件的文件目录，容器挂载路径需要和宿主机路径保持一致，根据实际需求可挂载多个目录
 # --device /dev/dri:/dev/dri 为挂载核显驱动
@@ -68,12 +68,14 @@ docker run -d \
 --restart=always \
 --name fntv-desktop-backend \
 --gpus all \
+--runtime=nvidia \
 -e NVIDIA_DRIVER_CAPABILITIES=all \
+--device /dev/dri:/dev/dri \
 -p 8080:8080 \
 -v /vol2/1000/video:/vol2/1000/video \
 fntv-desktop-backend:latest
 ```
-### 本地部署（推荐）
+### 本地部署
 
 ```shell
 # 如果nas里已经装了 FFmpeg，则跳过此步骤
