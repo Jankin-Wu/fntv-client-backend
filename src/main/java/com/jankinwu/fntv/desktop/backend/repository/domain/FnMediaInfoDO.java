@@ -101,5 +101,5 @@ public class FnMediaInfoDO extends BaseDomain{
      * 编码格式
      */
     @TableField(value = "CODEC_NAME")
-    private String codec_name;
+    private String codecName;
 }

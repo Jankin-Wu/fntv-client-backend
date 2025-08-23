@@ -53,6 +53,5 @@ public class MediaController {
     public PlayResponse play(@RequestBody PlayRequest request) {
         return mediaService.getPlayResponse(request.getMediaGuid());
     }
-
 }
 

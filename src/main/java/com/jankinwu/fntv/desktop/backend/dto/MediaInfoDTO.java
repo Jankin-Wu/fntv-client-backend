@@ -73,4 +73,9 @@ public class MediaInfoDTO {
      * 平均帧率
      */
     private Integer avgFrameRate;
+
+    /**
+     * 编码格式
+     */
+    private String codecName;
 }

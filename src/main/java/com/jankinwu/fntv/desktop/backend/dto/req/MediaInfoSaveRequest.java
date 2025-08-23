@@ -1,5 +1,6 @@
 package com.jankinwu.fntv.desktop.backend.dto.req;
 
+import com.jankinwu.fntv.desktop.backend.enums.VedioCodingEnum;
 import lombok.Data;
 
 /**
@@ -62,6 +63,7 @@ public class MediaInfoSaveRequest {
 
     /**
      * 编码格式
+     * @see VedioCodingEnum
      */
-    private String codec_name;
+    private String codecName;
 }

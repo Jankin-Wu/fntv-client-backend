@@ -1,6 +1,7 @@
 package com.jankinwu.fntv.desktop.backend.service.impl;
 
 import com.jankinwu.fntv.desktop.backend.assembler.MediaInfoAssembler;
+import com.jankinwu.fntv.desktop.backend.cache.DeviceInfoHolder;
 import com.jankinwu.fntv.desktop.backend.cache.MediaInfoCache;
 import com.jankinwu.fntv.desktop.backend.config.AppConfig;
 import com.jankinwu.fntv.desktop.backend.dto.MediaInfoDTO;
@@ -15,6 +16,7 @@ import jakarta.servlet.ServletOutputStream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
@@ -40,6 +42,8 @@ public class MediaServiceImpl implements MediaService {
     private final MediaInfoCache mediaInfoCache;
 
     private final MediaInfoAssembler mediaInfoAssembler;
+
+    private final DeviceInfoHolder deviceInfoHolder;
 
     @Override
     public void getM3u8File(String mediaGuid, ServletOutputStream outputStream) {
@@ -75,8 +79,14 @@ public class MediaServiceImpl implements MediaService {
 
         if (Objects.nonNull(mediaInfo)) {
             String mediaFullPath = mediaInfo.getMediaFullPath();
-            FFmpegTranscodingUtil.sliceMediaToTs(appConfig.getFfmpegPath(), mediaFullPath, outputStream,
-                    true, fileName, appConfig.getSegmentDuration(), mediaInfo.getAvgFrameRate());
+            Pair<String, String> hwCodec = deviceInfoHolder.getAvailableHwEncoders().get(mediaInfo.getCodecName());
+            try {
+                FFmpegTranscodingUtil.sliceMediaToTs(appConfig.getFfmpegPath(), mediaFullPath, outputStream,
+                        true, fileName, appConfig.getSegmentDuration(), mediaInfo.getAvgFrameRate(),
+                        mediaInfo.getCodecName(), hwCodec);
+            } catch (IOException e) {
+                log.error("获取ts文件时发生错误", e);
+            }
         }
     }
 
@@ -93,22 +103,24 @@ public class MediaServiceImpl implements MediaService {
                     .setMediaFormat(request.getMediaFormat())
                     .setCategory(request.getCategory())
                     .setAvgFrameRate(request.getAvgFrameRate())
+                    .setCodecName(request.getCodecName())
                     .setM3u8Content(m3u8Content);
             fnMediaInfoRepository.updateById(mediaInfo);
-            return;
+        } else {
+            mediaInfo = FnMediaInfoDO.builder()
+                    .mediaGuid(request.getMediaGuid())
+                    .mediaName(request.getMediaName())
+                    .mediaFullPath(request.getMediaFullPath())
+                    .mediaType(request.getMediaType())
+                    .mediaFormat(request.getMediaFormat())
+                    .mediaDuration(request.getMediaDuration())
+                    .category(request.getCategory())
+                    .m3u8Content(m3u8Content)
+                    .codecName(request.getCodecName())
+                    .avgFrameRate(request.getAvgFrameRate())
+                    .build();
+            fnMediaInfoRepository.save(mediaInfo);
         }
-        mediaInfo = FnMediaInfoDO.builder()
-                .mediaGuid(request.getMediaGuid())
-                .mediaName(request.getMediaName())
-                .mediaFullPath(request.getMediaFullPath())
-                .mediaType(request.getMediaType())
-                .mediaFormat(request.getMediaFormat())
-                .mediaDuration(request.getMediaDuration())
-                .category(request.getCategory())
-                .m3u8Content(m3u8Content)
-                .avgFrameRate(request.getAvgFrameRate())
-                .build();
-        fnMediaInfoRepository.save(mediaInfo);
         // 更新缓存
         updateCache(mediaInfo);
     }

@@ -61,3 +61,4 @@ COMMENT ON COLUMN user_info.create_by IS '创建人';
 COMMENT ON COLUMN user_info.update_by IS '修改人';
 COMMENT ON COLUMN user_info.create_time IS '创建时间';
 COMMENT ON COLUMN user_info.update_time IS '修改时间';
+

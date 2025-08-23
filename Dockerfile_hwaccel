@@ -10,6 +10,7 @@ ENV LANGUAGE=C.UTF-8
 # 更新包列表并安装 OpenJDK 17
 RUN apt update && \
     apt install -y openjdk-17-jdk && \
+    apt install kmod && \
     rm -rf /var/lib/apt/lists/*
 
 COPY build/libs/*.jar /app/app.jar
