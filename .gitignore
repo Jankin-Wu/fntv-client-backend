@@ -37,3 +37,4 @@ out/
 .vscode/
 *.mv.db
 /fntv.trace.db
+/fn_tv_db.lock

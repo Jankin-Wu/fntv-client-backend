@@ -25,3 +25,5 @@ app:
   segment-duration: 4000
   # ffmpeg路径，如果没有在系统环境变量中配置ffmpeg的bin目录，必填
   ffmpeg-path:
+  # 默认转码模式，hw_only: 仅硬件转码 sw_only：仅软件转码 hw_sw_switch: 软硬交替
+  transcoding-mode: hw_only

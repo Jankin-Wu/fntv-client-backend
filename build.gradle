@@ -40,6 +40,7 @@ dependencies {
     implementation 'com.alibaba.fastjson2:fastjson2:2.0.40'
     implementation 'org.apache.commons:commons-lang3'
     implementation 'org.mapstruct:mapstruct:1.6.3'
+    implementation 'cn.hutool:hutool-core:5.8.25'
     annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
 }
 

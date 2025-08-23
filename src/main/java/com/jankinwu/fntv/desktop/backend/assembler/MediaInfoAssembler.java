@@ -2,6 +2,7 @@ package com.jankinwu.fntv.desktop.backend.assembler;
 
 
 import com.jankinwu.fntv.desktop.backend.dto.MediaInfoDTO;
+import com.jankinwu.fntv.desktop.backend.dto.req.MediaInfoSaveRequest;
 import com.jankinwu.fntv.desktop.backend.repository.domain.FnMediaInfoDO;
 import org.mapstruct.Mapper;
 import org.mapstruct.ReportingPolicy;
@@ -19,4 +20,6 @@ import org.mapstruct.ReportingPolicy;
 public interface MediaInfoAssembler {
 
     MediaInfoDTO toMediaInfoDTO(FnMediaInfoDO mediaInfoDO);
+
+    FnMediaInfoDO toFnMediaInfoDO(MediaInfoSaveRequest request);
 }

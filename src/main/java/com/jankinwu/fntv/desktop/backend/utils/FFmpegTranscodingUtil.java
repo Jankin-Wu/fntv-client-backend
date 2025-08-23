@@ -1,12 +1,15 @@
 package com.jankinwu.fntv.desktop.backend.utils;
 
+import cn.hutool.core.collection.CollUtil;
 import com.github.kokorin.jaffree.ffmpeg.ChannelOutput;
 import com.github.kokorin.jaffree.ffmpeg.FFmpeg;
 import com.github.kokorin.jaffree.ffmpeg.UrlInput;
+import com.jankinwu.fntv.desktop.backend.dto.CodecDTO;
 import com.jankinwu.fntv.desktop.backend.enums.HlsFileEnum;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.tuple.Triple;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -22,12 +25,30 @@ import java.util.*;
 @Slf4j
 public class FFmpegTranscodingUtil {
 
+    /**
+     * 切分视频为ts文件
+     *
+     * @param ffmpegPath                ffmpeg 二进制文件的路径
+     * @param inputVideoPath            源视频文件的路径
+     * @param outputStream              输出流
+     * @param enableHardwareTranscoding 是否使用硬件编码
+     * @param tsFileName                ts 文件名
+     * @param duration                  视频片段的持续时间
+     * @param fps                       视频片段的帧率
+     * @param codec                     编解码器
+     * @param colorPrimaries            原始色彩空间
+     * @param codecName                 编解码器名称
+     * @param hwApi                     硬件编码接口
+     * @throws IOException 抛出 IOException
+     */
     public static void sliceMediaToTs(String ffmpegPath, String inputVideoPath, OutputStream outputStream,
-                                      boolean enableHardwareEncoding, String tsFileName, Integer duration, Integer fps, String codecName,
-                                      Pair<String, String> hwCodec) throws IOException {
+                                      boolean enableHardwareTranscoding, String tsFileName, Integer duration, Integer fps,
+                                      CodecDTO codec, String colorPrimaries, String codecName, String hwApi) throws IOException {
         Path ffmpegBin = ffmpegPath == null ? null : Paths.get(ffmpegPath);
         SeekableByteChannel outputChannel = null;
         Path tempOutputPath = null;
+
+        List<String> videoProcessingFilterList = new ArrayList<>();
 
         try {
             int tsNum = parseFileNumberFromTsName(tsFileName);
@@ -39,20 +60,21 @@ public class FFmpegTranscodingUtil {
                     .addArgument("-copyts");
 
             // 使用硬件加速解码
-            if (enableHardwareEncoding) {
-                if (StringUtils.isNoneBlank(hwCodec.getKey())) {
-                    String hwAccelApi = hwCodec.getKey().split("_")[1];
-                    if (Objects.equals(hwAccelApi, "cuvid")) {
-                        urlInput.addArguments("-c:v", hwCodec.getKey())
-                                .addArguments("-hwaccel", "cuda")
-                                .addArguments("-hwaccel_output_format", "cuda");
+            if (enableHardwareTranscoding && StringUtils.isNoneBlank(codec.getHwDecoderName())) {
+                String hwAccelApi = codec.getHwDecoderName().split("_")[1];
+                if (Objects.equals(hwAccelApi, "cuvid")) {
+                    urlInput.addArguments("-c:v", codec.getHwDecoderName())
+                            .addArguments("-hwaccel", "cuda")
+                            .addArguments("-hwaccel_output_format", "cuda");
 
-                    } else if (Objects.equals(hwAccelApi, "qsv")) {
-                        urlInput.addArguments("-c:v", hwCodec.getKey())
-                                .addArguments("-hwaccel", "qsv");
-                    }
+                } else if (Objects.equals(hwAccelApi, "qsv")) {
+                    urlInput.addArguments("-c:v", codec.getHwDecoderName())
+                            .addArguments("-hwaccel", "qsv");
                 }
+            } else {
+                urlInput.addArguments("-c:v", codec.getSwDecoderName());
             }
+
 
             // 生成带UUID的临时文件路径
             String tempDir = System.getProperty("java.io.tmpdir");
@@ -70,27 +92,33 @@ public class FFmpegTranscodingUtil {
                     .addArguments("-force_key_frames", "expr:gte(t,n_forced*2)")
                     .addArguments("-q:v", "0")
                     .addArguments("-b:v", "0");
-
+            // 添加帧率参数，保证关键帧对齐
             if (Objects.nonNull(fps)) {
-                channelOutput.addArguments("-vf", "fps=fps=" + fps)
-                        .addArguments("-g", fps.toString())
-                        .addArguments("-keyint_min", fps.toString());
+                channelOutput
+                        .addArguments("-g", String.valueOf(fps*2))
+                        .addArguments("-keyint_min", String.valueOf(fps*2));
+                videoProcessingFilterList.add("fps=fps=" + fps*2);
             }
-            if (enableHardwareEncoding) {
-                if (StringUtils.isNoneBlank(hwCodec.getValue())) {
-                    channelOutput.addArguments("-c:v", hwCodec.getValue());
-                }
+            if (enableHardwareTranscoding && StringUtils.isNoneBlank(codec.getHwEncoderName())) {
+                channelOutput.addArguments("-c:v", codec.getHwEncoderName());
+            } else {
+                channelOutput.addArguments("-c:v", codec.getSwEncoderName());
             }
+            if (Objects.equals(hwApi, "vaapi")) {
+                videoProcessingFilterList.add("format=nv12");
+                videoProcessingFilterList.add("hwupload");
+            }
+            // 组装视频转换滤镜参数
+            assembleVideoProcessingFilter(videoProcessingFilterList, channelOutput);
+
             FFmpeg ffmpeg = FFmpeg.atPath(ffmpegBin)
                     .addInput(urlInput)
                     .addOutput(channelOutput);
             // 执行FFmpeg命令并将输出写入流
             ffmpeg.execute();
-// 将文件内容复制到输出流
+            // 将文件内容复制到输出流
             Files.copy(tempOutputPath, outputStream);
 
-            // 可选：删除临时文件
-            Files.deleteIfExists(tempOutputPath);
         } catch (IOException e) {
             throw new RuntimeException(e);
         } finally {
@@ -108,6 +136,13 @@ public class FFmpegTranscodingUtil {
                     log.error("删除临时文件时发生错误", e);
                 }
             }
+        }
+    }
+
+    private static void assembleVideoProcessingFilter(List<String> videoProcessingFilterList, ChannelOutput channelOutput) {
+        if (CollUtil.isNotEmpty(videoProcessingFilterList)) {
+            String videoProcessingFilter = String.join(",", videoProcessingFilterList);
+            channelOutput.addArguments("-vf", videoProcessingFilter);
         }
     }
 
@@ -147,13 +182,13 @@ public class FFmpegTranscodingUtil {
     /**
      * 通过检查系统内核模块来检测可用的硬件编解码器
      */
-    public static Pair<String, String> detectMatchedHardwareCodec(Path ffmpegBin, String srcCodec) {
+    public static Triple<String, String, String> detectMatchedHardwareCodec(Path ffmpegBin, String srcCodec) {
         // 规范化为我们关注的类别
         String family = normalizeCodecFamily(srcCodec); // h264 / hevc / other
         if (family == null) return null;
 
         // 检查系统中加载的硬件相关内核模块
-        Set<String> availableModules = getLoadedHardwareModules();
+        List<String> availableModules = getLoadedHardwareModules();
 
         // 根据检测到的硬件模块确定可用的编码器
         List<String> encoderCandidates = getEncoderCandidates(family, availableModules);
@@ -186,10 +221,10 @@ public class FFmpegTranscodingUtil {
             }
             ;
         }
-        return Pair.of(hwDecoder, hwEncoder);
+        return Triple.of(hwDecoder, hwEncoder, availableModules.get(0));
     }
 
-    private static List<String> getDecoderCandidates(String family, Set<String> availableModules) {
+    private static List<String> getDecoderCandidates(String family, List<String> availableModules) {
         List<String> decoderCandidates = new ArrayList<>();
         switch (family) {
             case "h264":
@@ -200,7 +235,7 @@ public class FFmpegTranscodingUtil {
                     decoderCandidates.add("h264_qsv");
                 }
                 if (availableModules.contains("amdgpu") || availableModules.contains("radeon")) {
-
+                    // Todo: 添加 AMD 硬件解码器
                 }
                 return decoderCandidates;
             case "hevc":
@@ -230,7 +265,7 @@ public class FFmpegTranscodingUtil {
         }
     }
 
-    private static List<String> getEncoderCandidates(String family, Set<String> availableModules) {
+    private static List<String> getEncoderCandidates(String family, List<String> availableModules) {
         List<String> encoderCandidates = new ArrayList<>();
         switch (family) {
             case "h264":
@@ -277,8 +312,8 @@ public class FFmpegTranscodingUtil {
     /**
      * 获取系统中加载的硬件相关内核模块
      */
-    private static Set<String> getLoadedHardwareModules() {
-        Set<String> modules = new HashSet<>();
+    private static List<String> getLoadedHardwareModules() {
+        List<String> modules = new ArrayList<>();
         String osName = System.getProperty("os.name").toLowerCase();
         try {
             // 在Linux系统上检查内核模块
@@ -486,4 +521,94 @@ public class FFmpegTranscodingUtil {
         return result;
     }
 
+    /**
+     * 检测匹配的软件编解码器
+     *
+     * @param ffmpegBin FFmpeg可执行文件路径
+     * @param srcCodec  源视频编码格式
+     * @return Pair<解码器, 编码器>，如果未找到则对应位置为空字符串
+     */
+    public static Pair<String, String> detectMatchedSoftwareCodec(Path ffmpegBin, String srcCodec) {
+        // 规范化编码器族
+        String family = normalizeCodecFamily(srcCodec);
+        if (family == null) return null;
+
+        // 获取FFmpeg支持的编解码器列表
+        List<String> encoders = runFfmpegInfo(ffmpegBin, "-encoders");
+        List<String> decoders = runFfmpegInfo(ffmpegBin, "-decoders");
+
+        String softwareEncoder = "";
+        String softwareDecoder = "";
+
+        // 根据编码器族选择合适的软件编解码器
+        switch (family) {
+            case "h264":
+                // 优先选择libx264，如果没有则选择h264
+                if (encoders.stream().anyMatch(line -> line.contains("libx264"))) {
+                    softwareEncoder = "libx264";
+                } else if (encoders.stream().anyMatch(line -> line.contains("h264"))) {
+                    softwareEncoder = "h264";
+                }
+
+                // 选择h264解码器
+                if (decoders.stream().anyMatch(line -> line.contains("h264"))) {
+                    softwareDecoder = "h264";
+                }
+                break;
+            case "hevc":
+                // 优先选择libx265，如果没有则选择hevc
+                if (encoders.stream().anyMatch(line -> line.contains("libx265"))) {
+                    softwareEncoder = "libx265";
+                } else if (encoders.stream().anyMatch(line -> line.contains("hevc"))) {
+                    softwareEncoder = "hevc";
+                }
+
+                // 选择hevc解码器
+                if (decoders.stream().anyMatch(line -> line.contains("hevc"))) {
+                    softwareDecoder = "hevc";
+                }
+                break;
+            case "av1":
+                // 优先选择libaom-av1，如果没有则选择av1
+                if (encoders.stream().anyMatch(line -> line.contains("libaom-av1"))) {
+                    softwareEncoder = "libaom-av1";
+                } else if (encoders.stream().anyMatch(line -> line.contains("av1"))) {
+                    softwareEncoder = "av1";
+                }
+
+                // 选择av1解码器
+                if (decoders.stream().anyMatch(line -> line.contains("av1"))) {
+                    softwareDecoder = "av1";
+                }
+                break;
+            default:
+                // 对于其他编码格式，直接查找是否有匹配的软件编码器
+                for (String line : encoders) {
+                    if (line.contains(family) && !line.contains("dev")) {
+                        // 提取编码器名称（第二列）
+                        String[] parts = line.trim().split("\\s+");
+                        if (parts.length > 1) {
+                            softwareEncoder = parts[1];
+                            break;
+                        }
+                    }
+                }
+
+                // 查找对应的解码器
+                for (String line : decoders) {
+                    if (line.contains(family) && !line.contains("dev")) {
+                        // 提取解码器名称（第二列）
+                        String[] parts = line.trim().split("\\s+");
+                        if (parts.length > 1) {
+                            softwareDecoder = parts[1];
+                            break;
+                        }
+                    }
+                }
+                break;
+        }
+
+        return Pair.of(softwareDecoder, softwareEncoder);
+
+    }
 }

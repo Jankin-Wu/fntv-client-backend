@@ -1,6 +1,7 @@
 package com.jankinwu.fntv.desktop.backend.service;
 
 import com.jankinwu.fntv.desktop.backend.dto.req.MediaInfoSaveRequest;
+import com.jankinwu.fntv.desktop.backend.dto.req.PlayRequest;
 import com.jankinwu.fntv.desktop.backend.dto.resp.PlayResponse;
 import jakarta.servlet.ServletOutputStream;
 
@@ -18,4 +19,6 @@ public interface MediaService {
     void saveOrUpdateMediaInfo(MediaInfoSaveRequest request);
 
     PlayResponse getPlayResponse(String mediaGuid);
+
+    void saveOrUpdatePlayInfo(PlayRequest request);
 }

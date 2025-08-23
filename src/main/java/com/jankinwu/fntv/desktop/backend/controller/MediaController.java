@@ -51,6 +51,7 @@ public class MediaController {
 
     @PostMapping("/play/info")
     public PlayResponse play(@RequestBody PlayRequest request) {
+        mediaService.saveOrUpdatePlayInfo(request);
         return mediaService.getPlayResponse(request.getMediaGuid());
     }
 }

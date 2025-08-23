@@ -19,4 +19,9 @@ public class PlayRequest {
      * 画质
      */
     private String quality;
+
+    /**
+     * 转码模式
+     */
+    private String transcodingMode;
 }

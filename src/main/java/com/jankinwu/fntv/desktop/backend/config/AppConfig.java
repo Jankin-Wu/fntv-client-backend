@@ -23,4 +23,9 @@ public class AppConfig {
      * FFmpeg路径
      */
     private String ffmpegPath;
+
+    /**
+     * 默认转码模式
+     */
+    private String transcodingMode;
 }

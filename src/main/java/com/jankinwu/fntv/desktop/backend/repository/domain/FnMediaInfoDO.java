@@ -102,4 +102,10 @@ public class FnMediaInfoDO extends BaseDomain{
      */
     @TableField(value = "CODEC_NAME")
     private String codecName;
+
+    /**
+     * 原始色彩空间
+     */
+    @TableField(value = "COLOR_PRIMARIES")
+    private String colorPrimaries;
 }

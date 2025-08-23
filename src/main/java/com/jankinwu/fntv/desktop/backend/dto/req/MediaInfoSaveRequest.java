@@ -66,4 +66,9 @@ public class MediaInfoSaveRequest {
      * @see VedioCodingEnum
      */
     private String codecName;
+
+    /**
+     * 原始色彩空间
+     */
+    private String colorPrimaries;
 }

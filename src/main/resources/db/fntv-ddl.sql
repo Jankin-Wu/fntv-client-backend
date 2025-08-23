@@ -1,23 +1,24 @@
 CREATE TABLE IF NOT EXISTS fn_media_info
 (
-    id                        BIGINT AUTO_INCREMENT PRIMARY KEY,
-    media_name                VARCHAR(255),
-    media_full_path           VARCHAR(255),
-    media_guid                VARCHAR(255),
-    media_type                VARCHAR(255),
-    media_format              VARCHAR(20),
-    duration                  INT8,
-    category                  VARCHAR(20),
-    m3u8_content              TEXT,
-    avg_frame_rate            INT4,
-    bps                       INT8,
-    codec_name                VARCHAR(20),
-    color_range_type          VARCHAR(20),
-    ts_start_time_map         TEXT,
-    create_by                 VARCHAR(255),
-    update_by                 VARCHAR(255),
-    create_time               TIMESTAMP default CURRENT_TIMESTAMP,
-    update_time               TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    id                BIGINT AUTO_INCREMENT PRIMARY KEY,
+    media_name        VARCHAR(255),
+    media_full_path   VARCHAR(255),
+    media_guid        VARCHAR(255),
+    media_type        VARCHAR(255),
+    media_format      VARCHAR(20),
+    duration          INT8,
+    category          VARCHAR(20),
+    m3u8_content      TEXT,
+    avg_frame_rate    INT4,
+    bps               INT8,
+    color_primaries   VARCHAR(20),
+    codec_name        VARCHAR(20),
+    color_range_type  VARCHAR(20),
+    ts_start_time_map TEXT,
+    create_by         VARCHAR(255),
+    update_by         VARCHAR(255),
+    create_time       TIMESTAMP default CURRENT_TIMESTAMP,
+    update_time       TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_uk_media_guid ON fn_media_info (media_guid);
 
@@ -33,6 +34,7 @@ COMMENT ON COLUMN fn_media_info.category IS '媒体分类';
 COMMENT ON COLUMN fn_media_info.m3u8_content IS 'm3u8文件内容';
 COMMENT ON COLUMN fn_media_info.avg_frame_rate IS '平均帧率';
 COMMENT ON COLUMN fn_media_info.bps IS '码率';
+COMMENT ON COLUMN fn_media_info.color_primaries IS '原始色彩空间';
 COMMENT ON COLUMN fn_media_info.codec_name IS '编码格式名称';
 COMMENT ON COLUMN fn_media_info.color_range_type IS '颜色范围';
 COMMENT ON COLUMN fn_media_info.ts_start_time_map IS 'ts文件起始时间映射';
@@ -43,14 +45,14 @@ COMMENT ON COLUMN fn_media_info.update_time IS '修改时间';
 
 CREATE TABLE IF NOT EXISTS user_info
 (
-    id                        BIGINT AUTO_INCREMENT PRIMARY KEY,
-    user_name                 VARCHAR(255),
-    cookie                    VARCHAR(255),
-    is_admin                  BOOLEAN,
-    create_by                 VARCHAR(255),
-    update_by                 VARCHAR(255),
-    create_time               TIMESTAMP,
-    update_time               TIMESTAMP
+    id          BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_name   VARCHAR(255),
+    cookie      VARCHAR(255),
+    is_admin    BOOLEAN,
+    create_by   VARCHAR(255),
+    update_by   VARCHAR(255),
+    create_time TIMESTAMP,
+    update_time TIMESTAMP
 );
 COMMENT ON TABLE user_info IS '用户信息表';
 COMMENT ON COLUMN user_info.id IS '主键';
@@ -61,4 +63,25 @@ COMMENT ON COLUMN user_info.create_by IS '创建人';
 COMMENT ON COLUMN user_info.update_by IS '修改人';
 COMMENT ON COLUMN user_info.create_time IS '创建时间';
 COMMENT ON COLUMN user_info.update_time IS '修改时间';
+
+
+CREATE TABLE IF NOT EXISTS media_transcoding_info
+(
+    id               BIGINT AUTO_INCREMENT PRIMARY KEY,
+    media_guid       VARCHAR(255),
+    transcoding_mode VARCHAR(20),
+    create_by        VARCHAR(255),
+    update_by        VARCHAR(255),
+    create_time      TIMESTAMP,
+    update_time      TIMESTAMP
+);
+COMMENT ON TABLE media_transcoding_info IS '转码信息表';
+COMMENT ON COLUMN media_transcoding_info.id IS '主键';
+COMMENT ON COLUMN media_transcoding_info.media_guid IS '媒体GUID';
+COMMENT ON COLUMN media_transcoding_info.transcoding_mode IS '转码模式';
+COMMENT ON COLUMN media_transcoding_info.create_by IS '创建人';
+COMMENT ON COLUMN media_transcoding_info.update_by IS '修改人';
+COMMENT ON COLUMN media_transcoding_info.create_time IS '创建时间';
+COMMENT ON COLUMN media_transcoding_info.update_time IS '修改时间';
+
 
