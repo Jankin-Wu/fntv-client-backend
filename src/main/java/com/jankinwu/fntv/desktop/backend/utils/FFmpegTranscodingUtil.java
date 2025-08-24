@@ -6,6 +6,7 @@ import com.github.kokorin.jaffree.ffmpeg.FFmpeg;
 import com.github.kokorin.jaffree.ffmpeg.UrlInput;
 import com.jankinwu.fntv.desktop.backend.dto.CodecDTO;
 import com.jankinwu.fntv.desktop.backend.enums.HlsFileEnum;
+import com.jankinwu.fntv.desktop.backend.enums.HwAccelApiEnum;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -38,12 +39,12 @@ public class FFmpegTranscodingUtil {
      * @param codec                     编解码器
      * @param colorPrimaries            原始色彩空间
      * @param codecName                 编解码器名称
-     * @param hwApi                     硬件编码接口
+     * @param hwAccelApi                硬件加速技术
      * @throws IOException 抛出 IOException
      */
     public static void sliceMediaToTs(String ffmpegPath, String inputVideoPath, OutputStream outputStream,
                                       boolean enableHardwareTranscoding, String tsFileName, Integer duration, Integer fps,
-                                      CodecDTO codec, String colorPrimaries, String codecName, String hwApi) throws IOException {
+                                      CodecDTO codec, String colorPrimaries, String codecName, String hwAccelApi) throws IOException {
         Path ffmpegBin = ffmpegPath == null ? null : Paths.get(ffmpegPath);
         SeekableByteChannel outputChannel = null;
         Path tempOutputPath = null;
@@ -61,13 +62,12 @@ public class FFmpegTranscodingUtil {
 
             // 使用硬件加速解码
             if (enableHardwareTranscoding && StringUtils.isNoneBlank(codec.getHwDecoderName())) {
-                String hwAccelApi = codec.getHwDecoderName().split("_")[1];
-                if (Objects.equals(hwAccelApi, "cuvid")) {
+                if (Objects.equals(hwAccelApi, HwAccelApiEnum.CUDA.getName())) {
                     urlInput.addArguments("-c:v", codec.getHwDecoderName())
                             .addArguments("-hwaccel", "cuda")
                             .addArguments("-hwaccel_output_format", "cuda");
 
-                } else if (Objects.equals(hwAccelApi, "qsv")) {
+                } else if (Objects.equals(hwAccelApi, HwAccelApiEnum.QSV.getName())) {
                     urlInput.addArguments("-c:v", codec.getHwDecoderName())
                             .addArguments("-hwaccel", "qsv");
                 }
@@ -88,25 +88,28 @@ public class FFmpegTranscodingUtil {
             ChannelOutput channelOutput = ChannelOutput
                     .toChannel(tsFileName, outputChannel)
                     .setFormat("mpegts")
-                    //                .addArguments("-sc_threshold", "0")
+//                    .addArguments("-sc_threshold", "0")
                     .addArguments("-force_key_frames", "expr:gte(t,n_forced*2)")
-                    .addArguments("-q:v", "0")
+//                    .addArguments("-q:v", "0");
                     .addArguments("-b:v", "0");
             // 添加帧率参数，保证关键帧对齐
             if (Objects.nonNull(fps)) {
                 channelOutput
-                        .addArguments("-g", String.valueOf(fps*2))
-                        .addArguments("-keyint_min", String.valueOf(fps*2));
-                videoProcessingFilterList.add("fps=fps=" + fps*2);
+                        .addArguments("-g", String.valueOf(fps * 2))
+                        .addArguments("-keyint_min", String.valueOf(fps * 2 ));
+                videoProcessingFilterList.add("fps=fps=" + fps);
             }
             if (enableHardwareTranscoding && StringUtils.isNoneBlank(codec.getHwEncoderName())) {
                 channelOutput.addArguments("-c:v", codec.getHwEncoderName());
             } else {
                 channelOutput.addArguments("-c:v", codec.getSwEncoderName());
             }
-            if (Objects.equals(hwApi, "vaapi")) {
+            if (Objects.equals(hwAccelApi, HwAccelApiEnum.VAAPI.getName())) {
                 videoProcessingFilterList.add("format=nv12");
                 videoProcessingFilterList.add("hwupload");
+            } else if (Objects.equals(hwAccelApi, HwAccelApiEnum.QSV.getName())) {
+                // 使用QSV低功耗转码，提升转码效率
+                channelOutput.addArguments("-low_power", "1");
             }
             // 组装视频转换滤镜参数
             assembleVideoProcessingFilter(videoProcessingFilterList, channelOutput);
@@ -182,7 +185,7 @@ public class FFmpegTranscodingUtil {
     /**
      * 通过检查系统内核模块来检测可用的硬件编解码器
      */
-    public static Triple<String, String, String> detectMatchedHardwareCodec(Path ffmpegBin, String srcCodec) {
+    public static Triple<String, String, List<String>> detectMatchedHardwareCodec(Path ffmpegBin, String srcCodec) {
         // 规范化为我们关注的类别
         String family = normalizeCodecFamily(srcCodec); // h264 / hevc / other
         if (family == null) return null;
@@ -221,7 +224,7 @@ public class FFmpegTranscodingUtil {
             }
             ;
         }
-        return Triple.of(hwDecoder, hwEncoder, availableModules.get(0));
+        return Triple.of(hwDecoder, hwEncoder, availableModules);
     }
 
     private static List<String> getDecoderCandidates(String family, List<String> availableModules) {

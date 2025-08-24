@@ -102,7 +102,7 @@ public class MediaServiceImpl implements MediaService {
         try {
             FFmpegTranscodingUtil.sliceMediaToTs(appConfig.getFfmpegPath(), mediaFullPath, outputStream,
                     enableHwTranscoding, fileName, appConfig.getSegmentDuration(), mediaInfo.getAvgFrameRate(),
-                    codec, mediaInfo.getColorPrimaries(), mediaInfo.getCodecName(), deviceInfoHolder.getHwApi());
+                    codec, mediaInfo.getColorPrimaries(), mediaInfo.getCodecName(), deviceInfoHolder.getHwAccelApi());
         } catch (IOException e) {
             log.error("获取ts文件时发生错误", e);
         }
