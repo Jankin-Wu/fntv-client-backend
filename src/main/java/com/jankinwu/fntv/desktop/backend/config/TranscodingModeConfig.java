@@ -39,7 +39,7 @@ public class TranscodingModeConfig {
      * 获取硬件加速标志
      * @return 硬件加速标志
      */
-    public boolean isEnableHwaAccel() {
+    public boolean isEnableHwAccel() {
         if (transcodingMode == TranscodingModeEnum.HW_ONLY) {
             enableHardwareAcceleration = true;
         } else if (transcodingMode == TranscodingModeEnum.HW_SW_SWITCH) {

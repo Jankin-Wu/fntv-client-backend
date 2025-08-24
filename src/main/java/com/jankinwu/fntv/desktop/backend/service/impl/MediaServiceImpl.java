@@ -92,7 +92,7 @@ public class MediaServiceImpl implements MediaService {
         } else {
             TranscodingModeConfig.getInstance().setTranscodingMode(appConfig.getTranscodingMode());
         }
-        boolean enableHwTranscoding = TranscodingModeConfig.getInstance().isEnableHwaAccel();
+        boolean enableHwTranscoding = TranscodingModeConfig.getInstance().isEnableHwAccel();
         log.info("当前转码模式为：{}", enableHwTranscoding ? "硬件加速" : "软件转码");
         String mediaFullPath = mediaInfo.getMediaFullPath();
         CodecDTO codec = null;

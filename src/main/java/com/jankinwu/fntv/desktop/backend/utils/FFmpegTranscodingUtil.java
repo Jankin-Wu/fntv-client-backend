@@ -123,7 +123,7 @@ public class FFmpegTranscodingUtil {
             Files.copy(tempOutputPath, outputStream);
 
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            log.error("生成TS文件时发生错误", e);
         } finally {
             if (outputChannel != null) {
                 try {
@@ -213,7 +213,6 @@ public class FFmpegTranscodingUtil {
                 hwEncoder = c;
                 break;
             }
-            ;
         }
         assert decoderCandidates != null;
         for (String c : decoderCandidates) {
@@ -222,7 +221,6 @@ public class FFmpegTranscodingUtil {
                 hwDecoder = c;
                 break;
             }
-            ;
         }
         return Triple.of(hwDecoder, hwEncoder, availableModules);
     }
@@ -470,21 +468,6 @@ public class FFmpegTranscodingUtil {
         if (c.contains("hevc") || c.contains("h265")) return "hevc";
         if (c.contains("av1")) return "av1";
         return null; // 其它暂不尝试硬件编码
-    }
-
-    // 根据编码器供应商添加最基础的硬件加速参数（仅在硬编时添加）
-    private static void addHwAccelArgs(FFmpeg ffmpeg, String encoder, boolean useGPUAcceleration) {
-        if (!useGPUAcceleration || encoder == null) return;
-        if (encoder.endsWith("_nvenc")) {
-            ffmpeg.addArguments("-hwaccel", "cuda");
-        } else if (encoder.endsWith("_qsv")) {
-            ffmpeg.addArguments("-hwaccel", "qsv");
-        } else if (encoder.endsWith("_amf")) {
-            // Windows 通常可用 dxva2/d3d11va 作为解码加速。这里以 dxva2 为例。
-            ffmpeg.addArguments("-hwaccel", "dxva2");
-        }
-        // 注：不同平台/驱动可能需要更多参数：-init_hw_device、-filter_hw_device、-vf hwupload 等
-        // 若采用 VAAPI/videotoolbox 需做额外适配，请按环境扩展。
     }
 
     private static List<String> runFfmpegInfo(Path ffmpegBin, String arg) {
