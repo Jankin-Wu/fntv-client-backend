@@ -56,9 +56,9 @@ docker run -d \
 fntv-desktop-backend:latest
 ```
 ##### 使用 Nvidia 显卡转码
-1. 在宿主机安装 NVIDIA Container Toolkit</br>
+1. 在宿主机安装 NVIDIA Container Toolkit<br>
 **参考:**</br>
-[安装 NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)</br>
+[安装 NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)<br>
 [Linux 使用 CUDA Docker 镜像加速视频转码](https://www.cnblogs.com/myzony/p/18270956/linux-cuda-docker-video-transcoding)
 
 2. 启动容器
@@ -87,9 +87,9 @@ java -jar build/libs/fntv-desktop-backend-*.jar --spring.profiles.active=release
 ```
 ## API
 
-| URL                            | 请求方法 | 参数说明                                                    | 接口说明                                          |
-|--------------------------------|------|---------------------------------------------------------|-----------------------------------------------|
-| /v/media/{mediaGuid}/{fileName} | GET  | mediaGuid：对应飞牛影视要播放的视频的guid<br/> fileName: m38u或ts的文件名称 | 提供给播放器使用的HLS协议接口                              |
-| /v/media/info/save          | POST | 保存视频信息，具体见代码中的 MediaInfoSaveRequest                     | 在播放前需要调用这个接口将视频信息传递给后端，用于后续视频转码               |
-| /v/media/play/info         | POST  | 播放参数，具体见代码中的 PlayRequest                                               | 在播放前或修改播放参数后需要调用这个接口将播放参数传递给后端，返回 HLS 协议的 URL |
+| URL                            | 请求方法 | 参数说明                                                   | 接口说明                                          |
+|--------------------------------|------|--------------------------------------------------------|-----------------------------------------------|
+| /v/media/{mediaGuid}/{fileName} | GET  | mediaGuid：对应飞牛影视要播放的视频的guid<br> fileName: m38u或ts的文件名称 | 提供给播放器使用的 HLS 协议接口                            |
+| /v/media/info/save          | POST | 保存视频信息，具体见代码中的 MediaInfoSaveRequest                    | 在播放前需要调用这个接口将视频信息传递给后端，用于后续视频转码               |
+| /v/media/play/info         | POST  | 播放参数，具体见代码中的 PlayRequest                                              | 在播放前或修改播放参数后需要调用这个接口将播放参数传递给后端，返回 HLS 协议的 URL |
 
