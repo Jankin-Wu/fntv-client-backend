@@ -1,4 +1,4 @@
-FROM akashisn/ffmpeg:7.0.2
+FROM  linuxserver/ffmpeg:version-8.0-cli
 
 LABEL authors="JankinWu"
 
