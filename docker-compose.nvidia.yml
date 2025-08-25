@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  fntv-desktop-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile_hwaccel
+    image: fntv-desktop-backend:latest
+    container_name: fntv-desktop-backend
+    restart: always
+    devices:
+      - /dev/dri:/dev/dri
+    ports:
+      - "8080:8080"
+    volumes:
+      - /vol2/1000/video:/vol2/1000/video
+    environment:
+      - NVIDIA_DRIVER_CAPABILITIES=all
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    runtime: nvidia
