@@ -87,7 +87,7 @@ public class MediaServiceImpl implements MediaService {
         }
         MediaTranscodingInfoDO mediaTranscodingInfoDO = mediaTranscodingInfoRepository.queryByMediaGuid(mediaGuid);
         // 设置转码模式
-        if (Objects.nonNull(mediaTranscodingInfoDO) && StringUtils.isNoneBlank(mediaTranscodingInfoDO.getTranscodingMode())) {
+        if (Objects.nonNull(mediaTranscodingInfoDO) && StringUtils.isNotBlank(mediaTranscodingInfoDO.getTranscodingMode())) {
             TranscodingModeConfig.getInstance().setTranscodingMode(mediaTranscodingInfoDO.getTranscodingMode());
         } else {
             TranscodingModeConfig.getInstance().setTranscodingMode(appConfig.getTranscodingMode());
@@ -96,7 +96,7 @@ public class MediaServiceImpl implements MediaService {
         log.info("当前转码模式为：{}", enableHwTranscoding ? "硬件加速" : "软件转码");
         String mediaFullPath = mediaInfo.getMediaFullPath();
         CodecDTO codec = null;
-        if (StringUtils.isNoneBlank(mediaInfo.getCodecName())) {
+        if (StringUtils.isNotBlank(mediaInfo.getCodecName())) {
             codec = deviceInfoHolder.getCodec(mediaInfo.getCodecName());
         }
         try {

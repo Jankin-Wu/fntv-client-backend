@@ -49,33 +49,7 @@ public class FFmpegTranscodingUtil {
         SeekableByteChannel outputChannel = null;
         Path tempOutputPath = null;
 
-        List<String> videoProcessingFilterList = new ArrayList<>();
-
         try {
-            int tsNum = parseFileNumberFromTsName(tsFileName);
-            long StartTime = (long) tsNum * duration;
-            UrlInput urlInput = UrlInput.fromUrl(inputVideoPath);
-
-            urlInput.setPosition(StartTime)
-                    .setDuration(duration)
-                    .addArgument("-copyts");
-
-            // 使用硬件加速解码
-            if (enableHardwareTranscoding && StringUtils.isNoneBlank(codec.getHwDecoderName())) {
-                if (Objects.equals(hwAccelApi, HwAccelApiEnum.CUDA.getName())) {
-                    urlInput.addArguments("-c:v", codec.getHwDecoderName())
-                            .addArguments("-hwaccel", "cuda")
-                            .addArguments("-hwaccel_output_format", "cuda");
-
-                } else if (Objects.equals(hwAccelApi, HwAccelApiEnum.QSV.getName())) {
-                    urlInput.addArguments("-c:v", codec.getHwDecoderName())
-                            .addArguments("-hwaccel", "qsv");
-                }
-            } else {
-                urlInput.addArguments("-c:v", codec.getSwDecoderName());
-            }
-
-
             // 生成带UUID的临时文件路径
             String tempDir = System.getProperty("java.io.tmpdir");
             String uuid = UUID.randomUUID().toString();
@@ -85,34 +59,10 @@ public class FFmpegTranscodingUtil {
             // 确保临时目录存在
             Files.createDirectories(tempOutputPath.getParent());
             outputChannel = Files.newByteChannel(tempOutputPath, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
-            ChannelOutput channelOutput = ChannelOutput
-                    .toChannel(tsFileName, outputChannel)
-                    .setFormat("mpegts")
-//                    .addArguments("-sc_threshold", "0")
-                    .addArguments("-force_key_frames", "expr:gte(t,n_forced*2)")
-//                    .addArguments("-q:v", "0");
-                    .addArguments("-b:v", "0");
-            // 添加帧率参数，保证关键帧对齐
-            if (Objects.nonNull(fps)) {
-                channelOutput
-                        .addArguments("-g", String.valueOf(fps * 2))
-                        .addArguments("-keyint_min", String.valueOf(fps * 2 ));
-                videoProcessingFilterList.add("fps=fps=" + fps);
-            }
-            if (enableHardwareTranscoding && StringUtils.isNoneBlank(codec.getHwEncoderName())) {
-                channelOutput.addArguments("-c:v", codec.getHwEncoderName());
-            } else {
-                channelOutput.addArguments("-c:v", codec.getSwEncoderName());
-            }
-            if (Objects.equals(hwAccelApi, HwAccelApiEnum.VAAPI.getName())) {
-                videoProcessingFilterList.add("format=nv12");
-                videoProcessingFilterList.add("hwupload");
-            } else if (Objects.equals(hwAccelApi, HwAccelApiEnum.QSV.getName())) {
-                // 使用QSV低功耗转码，提升转码效率
-                channelOutput.addArguments("-low_power", "1");
-            }
-            // 组装视频转换滤镜参数
-            assembleVideoProcessingFilter(videoProcessingFilterList, channelOutput);
+
+            // 组装输入和输出参数
+            UrlInput urlInput = assembleInputArguments(inputVideoPath, tsFileName, duration, codec, hwAccelApi, enableHardwareTranscoding);
+            ChannelOutput channelOutput = assembleOutputArguments(outputChannel, tsFileName, fps, codec, hwAccelApi, enableHardwareTranscoding);
 
             FFmpeg ffmpeg = FFmpeg.atPath(ffmpegBin)
                     .addInput(urlInput)
@@ -140,6 +90,94 @@ public class FFmpegTranscodingUtil {
                 }
             }
         }
+    }
+
+    /**
+     * 组装FFmpeg输入参数
+     *
+     * @param inputVideoPath            源视频文件路径
+     * @param tsFileName                TS文件名
+     * @param duration                  视频片段持续时间
+     * @param codec                     编解码器信息
+     * @param hwAccelApi                硬件加速API
+     * @param enableHardwareTranscoding
+     * @return UrlInput对象
+     */
+    private static UrlInput assembleInputArguments(String inputVideoPath, String tsFileName, Integer duration,
+                                                   CodecDTO codec, String hwAccelApi, boolean enableHardwareTranscoding) {
+        int tsNum = parseFileNumberFromTsName(tsFileName);
+        long startTime = (long) tsNum * duration;
+        UrlInput urlInput = UrlInput.fromUrl(inputVideoPath);
+
+        urlInput.setPosition(startTime)
+                .setDuration(duration)
+                .addArgument("-copyts");
+
+        // 使用硬件加速解码
+        if (enableHardwareTranscoding && StringUtils.isNotBlank(codec.getHwDecoderName())) {
+            if (Objects.equals(hwAccelApi, HwAccelApiEnum.CUDA.getName())) {
+                urlInput.addArguments("-c:v", codec.getHwDecoderName())
+                        .addArguments("-hwaccel", "cuda")
+                        .addArguments("-hwaccel_output_format", "cuda");
+
+            } else if (Objects.equals(hwAccelApi, HwAccelApiEnum.QSV.getName())) {
+                urlInput.addArguments("-c:v", codec.getHwDecoderName())
+                        .addArguments("-hwaccel", "qsv");
+            }
+        } else {
+            urlInput.addArguments("-c:v", codec.getSwDecoderName());
+        }
+
+        return urlInput;
+    }
+
+    /**
+     * 组装FFmpeg输出参数
+     *
+     * @param outputChannel             输出通道
+     * @param tsFileName                TS文件名
+     * @param fps                       帧率
+     * @param codec                     编解码器信息
+     * @param hwAccelApi                硬件加速API
+     * @param enableHardwareTranscoding
+     * @return ChannelOutput对象
+     */
+    private static ChannelOutput assembleOutputArguments(SeekableByteChannel outputChannel, String tsFileName,
+                                                         Integer fps, CodecDTO codec, String hwAccelApi, boolean enableHardwareTranscoding) {
+        List<String> videoProcessingFilterList = new ArrayList<>();
+
+        ChannelOutput channelOutput = ChannelOutput
+                .toChannel(tsFileName, outputChannel)
+                .setFormat("mpegts")
+                .addArguments("-force_key_frames", "expr:gte(t,n_forced*2)")
+                .addArguments("-b:v", "0");
+
+        // 添加帧率参数，保证关键帧对齐
+        if (Objects.nonNull(fps)) {
+            channelOutput
+                    .addArguments("-g", String.valueOf(fps * 2))
+                    .addArguments("-keyint_min", String.valueOf(fps * 2));
+            videoProcessingFilterList.add("fps=fps=" + fps);
+        }
+        // 判断是否使用硬件加速编码
+        if (enableHardwareTranscoding && StringUtils.isNotBlank(codec.getHwEncoderName())) {
+            channelOutput.addArguments("-c:v", codec.getHwEncoderName());
+        } else {
+            channelOutput.addArguments("-c:v", codec.getSwEncoderName());
+        }
+        // 添加vaapi滤镜参数
+        if (Objects.equals(hwAccelApi, HwAccelApiEnum.VAAPI.getName())) {
+            videoProcessingFilterList.add("format=nv12");
+            videoProcessingFilterList.add("hwupload");
+        } else if (Objects.equals(hwAccelApi, HwAccelApiEnum.QSV.getName())) {
+            // 使用QSV低功耗转码，提升转码效率
+            channelOutput.addArguments("-low_power", "1");
+        }
+
+        // 组装视频转换滤镜参数
+        assembleVideoProcessingFilter(videoProcessingFilterList, channelOutput);
+
+        return channelOutput;
     }
 
     private static void assembleVideoProcessingFilter(List<String> videoProcessingFilterList, ChannelOutput channelOutput) {

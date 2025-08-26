@@ -38,3 +38,4 @@ out/
 *.mv.db
 /fntv.trace.db
 /fn_tv_db.lock
+/logs/
