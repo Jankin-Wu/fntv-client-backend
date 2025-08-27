@@ -274,7 +274,7 @@ public class FFmpegTranscodingUtil {
                     decoderCandidates.add("h264_qsv");
                 }
                 if (availableModules.contains("amdgpu") || availableModules.contains("radeon")) {
-                    // Todo: 添加 AMD 硬件解码器
+                    // 容器暂时不支持amd设备硬解
                 }
                 return decoderCandidates;
             case "hevc":
@@ -395,7 +395,7 @@ public class FFmpegTranscodingUtil {
             log.warn("Error detecting hardware modules: {}", e.getMessage());
         }
 
-        return modules;
+        return modules.stream().distinct().toList();
     }
 
     /**
