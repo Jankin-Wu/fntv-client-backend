@@ -39,7 +39,7 @@ docker compose -f docker-compose.nvidia.yml build
 #### 运行
 
 ```shell
-docker-compose up -d
+docker compose up -d
 ```
 ### 本地部署
 

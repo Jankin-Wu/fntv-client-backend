@@ -1,6 +1,7 @@
 package com.jankinwu.fntv.desktop.backend.service.impl;
 
 import com.jankinwu.fntv.desktop.backend.assembler.MediaInfoAssembler;
+import com.jankinwu.fntv.desktop.backend.cache.ActivityTracker;
 import com.jankinwu.fntv.desktop.backend.cache.DeviceInfoHolder;
 import com.jankinwu.fntv.desktop.backend.cache.MediaInfoCache;
 import com.jankinwu.fntv.desktop.backend.config.AppConfig;
@@ -10,6 +11,7 @@ import com.jankinwu.fntv.desktop.backend.dto.MediaInfoDTO;
 import com.jankinwu.fntv.desktop.backend.dto.req.MediaInfoSaveRequest;
 import com.jankinwu.fntv.desktop.backend.dto.req.PlayRequest;
 import com.jankinwu.fntv.desktop.backend.dto.resp.PlayResponse;
+import com.jankinwu.fntv.desktop.backend.lock.MediaProcessingLock;
 import com.jankinwu.fntv.desktop.backend.repository.FnMediaInfoRepository;
 import com.jankinwu.fntv.desktop.backend.repository.MediaTranscodingInfoRepository;
 import com.jankinwu.fntv.desktop.backend.repository.domain.FnMediaInfoDO;
@@ -81,30 +83,58 @@ public class MediaServiceImpl implements MediaService {
 
     @Override
     public void getTsFile(String mediaGuid, String fileName, ServletOutputStream outputStream) {
-        MediaInfoDTO mediaInfo = getMediaInfo(mediaGuid);
-        if (Objects.isNull(mediaInfo)) {
+        // 添加活动状态更新
+        ActivityTracker.updateActivity();
+
+        // 获取视频处理锁（阻塞等待）
+        try {
+            MediaProcessingLock.acquireProcessingLock();
+        } catch (InterruptedException e) {
+            log.warn("获取视频处理锁时被中断");
+            Thread.currentThread().interrupt();
             return;
         }
-        MediaTranscodingInfoDO mediaTranscodingInfoDO = mediaTranscodingInfoRepository.queryByMediaGuid(mediaGuid);
-        // 设置转码模式
-        if (Objects.nonNull(mediaTranscodingInfoDO) && StringUtils.isNotBlank(mediaTranscodingInfoDO.getTranscodingMode())) {
-            TranscodingModeConfig.getInstance().setTranscodingMode(mediaTranscodingInfoDO.getTranscodingMode());
-        } else {
-            TranscodingModeConfig.getInstance().setTranscodingMode(appConfig.getTranscodingMode());
-        }
-        boolean enableHwTranscoding = TranscodingModeConfig.getInstance().isEnableHwAccel();
-        log.info("当前转码模式为：{}", enableHwTranscoding ? "硬件加速" : "软件转码");
-        String mediaFullPath = mediaInfo.getMediaFullPath();
-        CodecDTO codec = null;
-        if (StringUtils.isNotBlank(mediaInfo.getCodecName())) {
-            codec = deviceInfoHolder.getCodec(mediaInfo.getCodecName());
-        }
+
         try {
-            FFmpegTranscodingUtil.sliceMediaToTs(appConfig.getFfmpegPath(), mediaFullPath, outputStream,
-                    enableHwTranscoding, fileName, appConfig.getSegmentDuration(), mediaInfo.getAvgFrameRate(),
-                    codec, mediaInfo.getColorPrimaries(), mediaInfo.getCodecName(), deviceInfoHolder.getHwAccelApi());
-        } catch (IOException e) {
-            log.error("获取ts文件时发生错误", e);
+            MediaInfoDTO mediaInfo = getMediaInfo(mediaGuid);
+            if (Objects.isNull(mediaInfo)) {
+                return;
+            }
+            MediaTranscodingInfoDO mediaTranscodingInfoDO = mediaTranscodingInfoRepository.queryByMediaGuid(mediaGuid);
+            // 设置转码模式
+            if (Objects.nonNull(mediaTranscodingInfoDO) && StringUtils.isNotBlank(mediaTranscodingInfoDO.getTranscodingMode())) {
+                TranscodingModeConfig.getInstance().setTranscodingMode(mediaTranscodingInfoDO.getTranscodingMode());
+            } else {
+                TranscodingModeConfig.getInstance().setTranscodingMode(appConfig.getTranscodingMode());
+            }
+            boolean enableHwTranscoding = TranscodingModeConfig.getInstance().isEnableHwAccel();
+            log.info("当前转码模式为：{}", enableHwTranscoding ? "硬件加速" : "软件转码");
+            String mediaFullPath = mediaInfo.getMediaFullPath();
+            CodecDTO codec = null;
+            if (StringUtils.isNotBlank(mediaInfo.getCodecName())) {
+                codec = deviceInfoHolder.getCodec(mediaInfo.getCodecName());
+            }
+            try {
+                FFmpegTranscodingUtil.sliceMediaToTs(appConfig.getFfmpegPath(), mediaFullPath, outputStream,
+                        enableHwTranscoding, fileName, appConfig.getSegmentDuration(), mediaInfo.getAvgFrameRate(),
+                        codec, mediaInfo.getColorPrimaries(), mediaInfo.getCodecName(), deviceInfoHolder.getHwAccelApi());
+            } catch (IOException e) {
+                log.error("获取ts文件时发生错误", e);
+            } finally {
+                try {
+                    outputStream.flush();
+                } catch (IOException e) {
+                    log.error("刷新输出流时发生错误", e);
+                }
+                try {
+                    outputStream.close();
+                } catch (IOException e) {
+                    log.error("关闭输出流时发生错误", e);
+                }
+            }
+        } finally {
+            // 释放视频处理锁
+            MediaProcessingLock.releaseProcessingLock();
         }
     }
 

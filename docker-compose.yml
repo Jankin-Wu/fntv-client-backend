@@ -6,6 +6,7 @@ services:
       context: ./
       dockerfile: Dockerfile_hwaccel
     image: fntv-desktop-backend:latest
+    privileged: true
     container_name: fntv-desktop-backend
     restart: always
     devices:

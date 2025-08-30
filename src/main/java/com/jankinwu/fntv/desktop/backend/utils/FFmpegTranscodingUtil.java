@@ -1,6 +1,7 @@
 package com.jankinwu.fntv.desktop.backend.utils;
 
 import cn.hutool.core.collection.CollUtil;
+import com.github.kokorin.jaffree.LogLevel;
 import com.github.kokorin.jaffree.ffmpeg.ChannelOutput;
 import com.github.kokorin.jaffree.ffmpeg.FFmpeg;
 import com.github.kokorin.jaffree.ffmpeg.UrlInput;
@@ -65,6 +66,7 @@ public class FFmpegTranscodingUtil {
             ChannelOutput channelOutput = assembleOutputArguments(outputChannel, tsFileName, fps, codec, hwAccelApi, enableHardwareTranscoding);
 
             FFmpeg ffmpeg = FFmpeg.atPath(ffmpegBin)
+                    .setLogLevel(LogLevel.ERROR)
                     .addInput(urlInput)
                     .addOutput(channelOutput);
             // 执行FFmpeg命令并将输出写入流
@@ -122,7 +124,8 @@ public class FFmpegTranscodingUtil {
 
             } else if (Objects.equals(hwAccelApi, HwAccelApiEnum.QSV.getName())) {
                 urlInput.addArguments("-c:v", codec.getHwDecoderName())
-                        .addArguments("-hwaccel", "qsv");
+                        .addArguments("-hwaccel", "qsv")
+                        .addArguments("-hwaccel_output_format", "qsv");
             }
         } else {
             urlInput.addArguments("-c:v", codec.getSwDecoderName());
@@ -273,9 +276,9 @@ public class FFmpegTranscodingUtil {
                 if (availableModules.contains("i915")) {
                     decoderCandidates.add("h264_qsv");
                 }
-                if (availableModules.contains("amdgpu") || availableModules.contains("radeon")) {
-                    // 容器暂时不支持amd设备硬解
-                }
+                // 容器暂时不支持amd设备硬解
+//                if (availableModules.contains("amdgpu") || availableModules.contains("radeon")) {
+//                }
                 return decoderCandidates;
             case "hevc":
                 if (availableModules.contains("nvidia")) {
@@ -284,9 +287,9 @@ public class FFmpegTranscodingUtil {
                 if (availableModules.contains("i915")) {
                     decoderCandidates.add("hevc_qsv");
                 }
-                if (availableModules.contains("amdgpu") || availableModules.contains("radeon")) {
-
-                }
+//                if (availableModules.contains("amdgpu") || availableModules.contains("radeon")) {
+//
+//                }
                 return decoderCandidates;
             case "av1":
                 if (availableModules.contains("nvidia")) {
@@ -295,9 +298,9 @@ public class FFmpegTranscodingUtil {
                 if (availableModules.contains("i915")) {
                     decoderCandidates.add("av1_qsv");
                 }
-                if (availableModules.contains("amdgpu") || availableModules.contains("radeon")) {
-
-                }
+//                if (availableModules.contains("amdgpu") || availableModules.contains("radeon")) {
+//
+//                }
                 return decoderCandidates;
             default:
                 return null;
