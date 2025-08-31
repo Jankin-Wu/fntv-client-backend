@@ -86,7 +86,7 @@ public class MediaServiceImpl implements MediaService {
         // 添加活动状态更新
         ActivityTracker.updateActivity();
 
-        // 获取视频处理锁（阻塞等待）
+        // 获取视频处理锁（阻塞等待），锁超时后会强制执行，避免阻塞
         try {
             MediaProcessingLock.acquireProcessingLock();
         } catch (InterruptedException e) {
