@@ -13,6 +13,7 @@ services:
       - /dev/dri:/dev/dri
     ports:
       - "8080:8080"
+    # 需要挂载存储视频文件的文件目录，容器挂载路径需要和宿主机路径保持一致，根据实际需求可挂载多个目录
     volumes:
       - /vol2/1000/video:/vol2/1000/video
     environment:
