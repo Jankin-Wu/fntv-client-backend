@@ -368,12 +368,24 @@ public class FFmpegTranscodingUtil {
                 String line;
                 while ((line = reader.readLine()) != null) {
                     if (line.contains("nvidia")) {
+                        if (modules.contains("nvidia")) {
+                            continue;
+                        }
                         modules.add("nvidia");
                     } else if (line.contains("amdgpu")) {
+                        if (modules.contains("amdgpu")) {
+                            continue;
+                        }
                         modules.add("amdgpu");
                     } else if (line.contains("radeon")) {
+                        if (modules.contains("radeon")) {
+                            continue;
+                        }
                         modules.add("radeon");
                     } else if (line.contains("i915")) {
+                        if (modules.contains("i915")) {
+                            continue;
+                        }
                         modules.add("i915");
                     }
                 }
