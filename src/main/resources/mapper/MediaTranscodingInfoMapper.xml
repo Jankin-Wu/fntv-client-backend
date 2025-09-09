@@ -2,9 +2,9 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.jankinwu.fntv.desktop.backend.mapper.MediaTranscodingInfoMapper">
+<mapper namespace="com.jankinwu.fntv.client.mapper.MediaTranscodingInfoMapper">
 
-    <resultMap id="BaseResultMap" type="com.jankinwu.fntv.desktop.backend.repository.domain.MediaTranscodingInfoDO">
+    <resultMap id="BaseResultMap" type="com.jankinwu.fntv.client.repository.domain.MediaTranscodingInfoDO">
             <id property="id" column="ID" />
             <result property="mediaGuid" column="MEDIA_GUID" />
             <result property="transcodingMode" column="transcoding_mode" />

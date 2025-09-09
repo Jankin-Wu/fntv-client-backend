@@ -1,4 +1,5 @@
-# fntv-desktop-backend
+# fntv-client-backend
+
 **飞牛影视客户端的后端项目**
 
 ## 项目简介

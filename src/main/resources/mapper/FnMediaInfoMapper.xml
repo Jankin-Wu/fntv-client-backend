@@ -2,9 +2,9 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.jankinwu.fntv.desktop.backend.mapper.FnMediaInfoMapper">
+<mapper namespace="com.jankinwu.fntv.client.mapper.FnMediaInfoMapper">
 
-    <resultMap id="BaseResultMap" type="com.jankinwu.fntv.desktop.backend.repository.domain.FnMediaInfoDO">
+    <resultMap id="BaseResultMap" type="com.jankinwu.fntv.client.repository.domain.FnMediaInfoDO">
             <id property="id" column="ID" jdbcType="BIGINT"/>
             <result property="mediaName" column="MEDIA_NAME" jdbcType="VARCHAR"/>
             <result property="mediaFullPath" column="MEDIA_FULL_PATH" jdbcType="VARCHAR"/>
