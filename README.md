@@ -35,6 +35,9 @@ git clone https://github.com/Jankin-Wu/fntv-desktop-backend.git
 # 跳转到项目目录
 cd fntv-desktop-backend
 
+# 给脚本加上可执行权限
+chmod +x gradlew
+
 # 清理构建目录
 ./gradlew clean
 

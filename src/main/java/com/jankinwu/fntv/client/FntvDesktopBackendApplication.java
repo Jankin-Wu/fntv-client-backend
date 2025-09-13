@@ -6,7 +6,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @EnableScheduling
-@MapperScan("com.jankinwu.fntv.desktop.backend.mapper")
+@MapperScan("com.jankinwu.fntv.client.mapper")
 @SpringBootApplication
 public class FntvDesktopBackendApplication {
 
