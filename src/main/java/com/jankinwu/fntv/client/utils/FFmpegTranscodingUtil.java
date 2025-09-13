@@ -126,6 +126,10 @@ public class FFmpegTranscodingUtil {
                 urlInput.addArguments("-c:v", codec.getHwDecoderName())
                         .addArguments("-hwaccel", "qsv")
                         .addArguments("-hwaccel_output_format", "qsv");
+            } else if (Objects.equals(hwAccelApi, HwAccelApiEnum.VAAPI.getName())) {
+                urlInput.addArguments("-c:v", codec.getHwDecoderName())
+                        .addArguments("-hwaccel", "vaapi")
+                        .addArguments("-filter_hw_device", "vaapi");
             }
         } else {
             urlInput.addArguments("-c:v", codec.getSwDecoderName());
