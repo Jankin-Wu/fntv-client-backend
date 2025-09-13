@@ -6,7 +6,7 @@ plugins {
 
 group = 'com.jankinwu'
 version = '0.1.0'
-description = 'fntv-desktop-backend'
+description = 'fntv-client-backend'
 
 java {
     toolchain {

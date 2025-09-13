@@ -28,12 +28,12 @@ apt install -y openjdk-17-jdk
 
 #### 克隆项目
 ```shell
-git clone https://github.com/Jankin-Wu/fntv-desktop-backend.git
+git clone https://github.com/Jankin-Wu/fntv-client-backend.git
 ```
 #### 构建 Jar 包
 ```shell
 # 跳转到项目目录
-cd fntv-desktop-backend
+cd fntv-client-backend
 
 # 给脚本加上可执行权限
 chmod +x gradlew
@@ -82,7 +82,7 @@ sudo apt update && sudo apt install -y ffmpeg
 ```
 
 ```shell
-java -jar build/libs/fntv-desktop-backend-*.jar --spring.profiles.active=release
+java -jar build/libs/fntv-client-backend-*.jar --spring.profiles.active=release
 ```
 ## API
 

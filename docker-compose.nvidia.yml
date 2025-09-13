@@ -1,13 +1,13 @@
 version: '3.8'
 
 services:
-  fntv-desktop-backend:
+  fntv-client-backend:
     build:
       context: .
       dockerfile: Dockerfile_hwaccel
-    image: fntv-desktop-backend:latest
+    image: fntv-client-backend:latest
     privileged: true
-    container_name: fntv-desktop-backend
+    container_name: fntv-client-backend
     restart: always
     devices:
       - /dev/dri:/dev/dri

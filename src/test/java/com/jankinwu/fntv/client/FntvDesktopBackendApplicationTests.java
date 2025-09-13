@@ -5,7 +5,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.ComponentScan;
 
 @SpringBootTest
-@ComponentScan(basePackages = "com.jankinwu.fntv.desktop.backend")
+@ComponentScan(basePackages = "com.jankinwu.fntv.client.backend")
 class FntvDesktopBackendApplicationTests {
 
     @Test
