@@ -5,6 +5,8 @@
 ## 项目简介
 作为飞牛影视客户端的后端服务，提供对视频的转码支持，使用 FFmpeg 对视频进行转码，支持HLS协议返回视频流，目前仅支持原画播放，后期会支持画质切换。
 
+飞牛影视客户端项目：https://github.com/Jankin-Wu/fntv-client-multiplatfrm
+
 ## 部署教程
 
 ### 从源码开始构建
